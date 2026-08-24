@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <meta
+    name="theme-color"
+    content="#090a0b"
+  />
+  <title>TATE Lab — Database Slot Planner</title>
+  <link
+    rel="stylesheet"
+    href="./styles.css"
+  />
+</head>
+
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">
+        TWETE ADAPTIVE TRAINING ENGINE
+      </div>
+      <h1>TATE Lab</h1>
+      <p>
+        Database-first workout selection and goal-slot planning.
+      </p>
+    </div>
+
+    <div class="topbar-actions">
+      <div
+        id="db-status"
+        class="status-pill"
+      >
+        Loading Supabase…
+      </div>
+
+      <div
+        id="engine-version"
+        class="version-pill"
+      ></div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <div class="step-number">1</div>
+          <div>
+            <h2>Workout Database</h2>
+            <p>
+              TATE may only use workouts that exist in Supabase.
+            </p>
+          </div>
+        </div>
+
+        <button
+          id="refresh-db"
+          class="ghost-btn"
+          type="button"
+        >
+          Refresh database
+        </button>
+      </div>
+
+      <div id="workout-library"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <div class="step-number">2</div>
+          <div>
+            <h2>Goal Slot Simulation</h2>
+            <p>
+              TATE first allocates stimuli, then assigns database workouts.
+            </p>
+          </div>
+        </div>
+
+        <div
+          id="plan-status"
+          class="status-text"
+        >
+          Waiting for database
+        </div>
+      </div>
+
+      <div class="simulation-grid">
+        <label>
+          Goal event
+          <select
+            id="goal-event"
+            disabled
+          >
+            <option selected>10K</option>
+          </select>
+        </label>
+
+        <label>
+          Quality slots
+          <input
+            id="slot-count"
+            type="number"
+            min="1"
+            max="40"
+            value="10"
+          />
+        </label>
+
+        <label>
+          Current 10K PB
+          <input
+            id="current-10k"
+            value="30:00"
+            placeholder="30:00"
+          />
+        </label>
+      </div>
+
+      <div class="score-title">
+        Section Athlete Scores
+      </div>
+
+      <div class="score-grid">
+        <label>
+          VO₂max
+          <input
+            type="number"
+            min="1"
+            max="100"
+            step="0.1"
+            data-score="VO2max"
+          />
+        </label>
+
+        <label>
+          Threshold
+          <input
+            type="number"
+            min="1"
+            max="100"
+            step="0.1"
+            data-score="Threshold"
+          />
+        </label>
+
+        <label>
+          10K Specific
+          <input
+            type="number"
+            min="1"
+            max="100"
+            step="0.1"
+            data-score="10K Specific"
+          />
+        </label>
+
+        <label>
+          Aerobic
+          <input
+            type="number"
+            min="1"
+            max="100"
+            step="0.1"
+            data-score="Aerobic"
+          />
+        </label>
+
+        <label>
+          Speed Endurance
+          <input
+            type="number"
+            min="1"
+            max="100"
+            step="0.1"
+            data-score="Speed Endurance"
+          />
+        </label>
+
+        <label>
+          Speed
+          <input
+            type="number"
+            min="1"
+            max="100"
+            step="0.1"
+            data-score="Speed"
+          />
+        </label>
+      </div>
+
+      <button
+        id="build-goal"
+        class="primary-btn"
+        type="button"
+      >
+        Build 10K Goal
+      </button>
+
+      <div
+        id="allocation-summary"
+        class="allocation-summary"
+      ></div>
+
+      <div
+        id="goal-plan"
+        class="goal-plan"
+      ></div>
+    </section>
+
+    <section class="panel architecture-panel">
+      <div class="panel-heading">
+        <div>
+          <div class="step-number">3</div>
+          <div>
+            <h2>Engine Rule</h2>
+            <p>
+              Workout content and planning logic are now separate.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="architecture-flow">
+        <div>Supabase Workout Library</div>
+        <span>→</span>
+        <div>Stimulus Slot Allocation</div>
+        <span>→</span>
+        <div>Priority / Coverage Assignment</div>
+        <span>→</span>
+        <div>Athlete-specific Workout</div>
+      </div>
+
+      <p class="rule-note">
+        If no database workout exists for a planned stimulus,
+        TATE shows a DATABASE GAP instead of inventing a workout.
+      </p>
+    </section>
+  </main>
+
+  <script
+    type="module"
+    src="./src/main.js"
+  ></script>
+</body>
+</html>
