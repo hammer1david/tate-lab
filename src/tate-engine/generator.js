@@ -2,11 +2,13 @@ import {
   thresholdDoseByTolerance,
   eventCompositeRules,
   racePhaseBias,
+  penalties,
 } from './config.js';
 
 import {
   compareProgression,
   compareWorkoutSimilarity,
+  normalizeWorkoutHistory,
 } from './progression.js';
 
 import {
@@ -29,7 +31,11 @@ function paceFrom5k(
       athlete.current5k
     ) || 900;
 
-  return (t / 5) * factor;
+  return (
+    t /
+    5 *
+    factor
+  );
 }
 
 function workoutBlock(
@@ -54,8 +60,11 @@ function interBlock(
   type = 'jog'
 ) {
   return {
-    kind: 'inter_block_rest',
+    kind:
+      'inter_block_rest',
+
     durationSeconds,
+
     type,
   };
 }
@@ -66,11 +75,16 @@ function signature(candidate) {
       candidate.blocks.map(
         b => ({
           kind: b.kind,
-          reps: b.reps,
+
+          reps:
+            b.reps,
+
           distanceMeters:
             b.distanceMeters,
+
           targetSecondsPerRep:
             b.targetSecondsPerRep,
+
           recoverySeconds:
             b.recoverySeconds,
         })
@@ -208,7 +222,8 @@ function thresholdCandidates(
       paceFrom5k(
         athlete,
         0.92
-      ) * 0.2;
+      ) *
+      0.2;
 
     candidates.push({
       family:
@@ -226,8 +241,11 @@ function thresholdCandidates(
             4,
             defaultReps - 1
           ),
+
           1000,
+
           threshold1k,
+
           60
         ),
 
@@ -285,10 +303,11 @@ function genericCandidates(
   const pace1k =
     paceFrom5k(
       athlete,
+
       athlete.primaryNeed ===
         'VO2max'
         ? 0.96
-        : 1.0
+        : 1
     );
 
   return [
@@ -308,7 +327,7 @@ function genericCandidates(
         ),
       ],
 
-      complexity: 0.0,
+      complexity: 0,
 
       secondary: [],
     },
@@ -324,9 +343,11 @@ function genericCandidates(
         workoutBlock(
           10,
           400,
+
           pace1k *
             0.4 *
             0.96,
+
           60
         ),
       ],
@@ -346,7 +367,8 @@ function estimateStressFit(
 ) {
   const work =
     candidate.blocks.filter(
-      b => b.kind === 'work'
+      b =>
+        b.kind === 'work'
     );
 
   const totalWorkSeconds =
@@ -358,6 +380,7 @@ function estimateStressFit(
           120
         ) *
           b.reps,
+
       0
     );
 
@@ -370,9 +393,15 @@ function estimateStressFit(
   const toleranceBoost =
     ({
       low: 0.78,
-      established: 0.9,
-      high: 1.0,
-      very_high: 1.07,
+
+      established:
+        0.9,
+
+      high:
+        1,
+
+      very_high:
+        1.07,
     })[
       athlete.tolerance
     ] || 0.9;
@@ -384,17 +413,18 @@ function estimateStressFit(
       0.3;
 
   return clamp(
-    (
-      readiness /
-      100
-    ) *
+    readiness /
+      100 *
       toleranceBoost -
+
       Math.max(
         0,
-        load - 1.0
+        load - 1
       ) *
         0.15 +
+
       0.2,
+
     0,
     1
   );
@@ -411,6 +441,165 @@ function contextKey(
     athlete.primaryNeed,
     candidate.family,
   ].join('|');
+}
+
+function evaluateHistory(
+  candidate,
+  athlete
+) {
+  const history =
+    normalizeWorkoutHistory(
+      athlete
+    );
+
+  if (!history.length) {
+    return {
+      progression: {
+        progressionFit:
+          0.72,
+
+        progressionLink:
+          0,
+
+        reason:
+          'No comparable history.',
+      },
+
+      maxSimilarity: 0,
+
+      historySimilarityExposure:
+        0,
+
+      historyMatches: [],
+    };
+  }
+
+  const comparisons =
+    history.map(
+      session => {
+        const similarity =
+          compareWorkoutSimilarity(
+            candidate,
+            session.workout
+          );
+
+        const recencyWeight =
+          Math.exp(
+            -session.daysAgo /
+              penalties
+                .similarityTauDays
+          );
+
+        const progression =
+          compareProgression(
+            candidate,
+            session.workout
+          );
+
+        return {
+          ...session,
+
+          similarity,
+
+          recencyWeight,
+
+          weightedSimilarity:
+            similarity *
+            recencyWeight,
+
+          progression,
+
+          progressionSelectionScore:
+            progression
+              .progressionFit *
+            Math.exp(
+              -session.daysAgo /
+                90
+            ),
+        };
+      }
+    );
+
+  const bestProgression =
+    [
+      ...comparisons,
+    ].sort(
+      (a, b) =>
+        b
+          .progressionSelectionScore -
+        a
+          .progressionSelectionScore
+    )[0];
+
+  const historySimilarityExposure =
+    clamp(
+      comparisons.reduce(
+        (sum, item) =>
+          sum +
+          item
+            .weightedSimilarity,
+
+        0
+      ),
+
+      0,
+
+      penalties
+        .historyExposureCap
+    );
+
+  const historyMatches =
+    comparisons
+      .filter(
+        item =>
+          item.similarity >=
+          0.2
+      )
+      .sort(
+        (a, b) =>
+          b
+            .weightedSimilarity -
+          a
+            .weightedSimilarity
+      )
+      .map(
+        item => ({
+          daysAgo:
+            item.daysAgo,
+
+          workout:
+            item.workout,
+
+          similarity:
+            item.similarity,
+
+          weightedSimilarity:
+            item
+              .weightedSimilarity,
+        })
+      );
+
+  return {
+    progression: {
+      ...bestProgression
+        .progression,
+
+      reason:
+        `${bestProgression.progression.reason} Based on session ${bestProgression.daysAgo}d ago.`,
+    },
+
+    maxSimilarity:
+      Math.max(
+        ...comparisons.map(
+          item =>
+            item.similarity
+        )
+      ),
+
+    historySimilarityExposure,
+
+    historyMatches,
+  };
 }
 
 export function generateCandidates(
@@ -433,19 +622,20 @@ export function generateCandidates(
     ] ||
     racePhaseBias.Loading;
 
-  const daysSinceSimilar = 7;
-
   const candidates =
     raw.map(
       (
         candidate,
         index
       ) => {
-        const progression =
-          compareProgression(
+        const history =
+          evaluateHistory(
             candidate,
-            athlete.recentWorkout
+            athlete
           );
+
+        const progression =
+          history.progression;
 
         const key =
           contextKey(
@@ -455,22 +645,26 @@ export function generateCandidates(
 
         const learnedModifier =
           learningState[key]
-            ?.modifier ?? 1;
+            ?.modifier ??
+          1;
 
         const primaryMatch =
           candidate.family
             .toLowerCase()
             .includes(
-              athlete.primaryNeed
+              athlete
+                .primaryNeed
                 .toLowerCase()
             )
             ? 1
             : 0.72;
 
         const hasUsefulSecondary =
-          candidate.secondary.includes(
-            'Speed'
-          ) &&
+          candidate.secondary
+            .includes(
+              'Speed'
+            ) &&
+
           [
             '5K',
             '10K',
@@ -481,21 +675,16 @@ export function generateCandidates(
             athlete.goalEvent
           );
 
-        // v0.1.1:
-        // compare actual workout
-        // structure instead of
-        // label text.
-        const workoutSimilarity =
-          compareWorkoutSimilarity(
-            candidate,
-            athlete.recentWorkout
-          );
-
         candidate.signature =
-          signature(candidate);
+          signature(
+            candidate
+          );
 
         candidate.learningKey =
           key;
+
+        candidate.historyMatches =
+          history.historyMatches;
 
         candidate.fit = {
           needMatch:
@@ -504,12 +693,15 @@ export function generateCandidates(
           eventPhaseFit:
             clamp(
               0.74 +
+
                 phaseBias
                   .specificity *
                   0.18 -
+
                 candidate
                   .complexity *
                   0.05,
+
               0,
               1
             ),
@@ -521,20 +713,26 @@ export function generateCandidates(
           toleranceFit:
             clamp(
               ({
-                low: 0.72,
+                low:
+                  0.72,
+
                 established:
                   0.88,
-                high: 0.95,
+
+                high:
+                  0.95,
+
                 very_high:
-                  1.0,
+                  1,
               })[
                 athlete
                   .tolerance
               ] -
+
                 Math.max(
                   0,
-                  candidate
-                    .blocks
+
+                  candidate.blocks
                     .filter(
                       b =>
                         b.kind ===
@@ -544,6 +742,7 @@ export function generateCandidates(
                     8
                 ) *
                   0.04,
+
               0,
               1
             ),
@@ -569,14 +768,22 @@ export function generateCandidates(
           practicalityFit:
             clamp(
               0.98 -
+
                 candidate
                   .complexity *
                   0.28,
+
               0,
               1
             ),
 
-          workoutSimilarity,
+          workoutSimilarity:
+            history
+              .maxSimilarity,
+
+          historySimilarityExposure:
+            history
+              .historySimilarityExposure,
 
           progressionLink:
             progression
@@ -599,9 +806,7 @@ export function generateCandidates(
         const scored =
           scoreCandidate(
             candidate,
-            {
-              daysSinceSimilar,
-            },
+            {},
             learnedModifier
           );
 
@@ -615,7 +820,8 @@ export function generateCandidates(
 
   return candidates.sort(
     (a, b) =>
-      b.score - a.score
+      b.score -
+      a.score
   );
 }
 
@@ -641,16 +847,6 @@ export function formatCandidate(
       continue;
     }
 
-    const target =
-      secondsToClock(
-        block.targetSecondsPerRep
-      );
-
-    const distance =
-      block.distanceMeters > 0
-        ? `${block.distanceMeters}m`
-        : 'work';
-
     const recovery =
       block.recoverySeconds
         ? `${secondsToClock(
@@ -658,10 +854,23 @@ export function formatCandidate(
           )} ${block.recoveryType}`
         : 'recovery unknown';
 
-    parts.push(
-      `${block.reps}×${distance} @ ${target} · ${recovery}`
-    );
+    if (
+      block.distanceMeters >
+      0
+    ) {
+      parts.push(
+        `${block.reps}×${block.distanceMeters}m @ ${secondsToClock(
+          block.targetSecondsPerRep
+        )} · ${recovery}`
+      );
+    } else {
+      parts.push(
+        `${block.reps}×${secondsToClock(
+          block.targetSecondsPerRep
+        )} work · ${recovery}`
+      );
+    }
   }
 
   return parts;
-}
+      }
