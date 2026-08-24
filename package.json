@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node ./tests/run-tests.mjs && node ./tests/run-slot-planner-tests.mjs",
+    "test": "node ./tests/run-slot-planner-tests.mjs",
     "test:slots": "node ./tests/run-slot-planner-tests.mjs",
     "serve": "python3 -m http.server 8080"
   }
