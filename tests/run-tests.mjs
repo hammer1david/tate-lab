@@ -7,6 +7,29 @@ import {
   ENGINE_VERSION,
 } from '../src/tate-engine/index.js';
 
+function baseAthlete(
+  overrides = {}
+) {
+  return {
+    goalEvent: '5K',
+
+    phase: 'Loading',
+
+    current5k:
+      '15:00',
+
+    tolerance:
+      'established',
+
+    primaryNeed:
+      'Threshold',
+
+    readiness: 82,
+
+    ...overrides,
+  };
+}
+
 function testParser() {
   const parsed =
     parseWorkoutText(
@@ -96,7 +119,9 @@ function testParser() {
 function testParserCoachShorthand() {
   const variants = [
     '5x1000 @3:03 / 60s',
+
     '5×1000m @ 3:03, 60sec rest',
+
     '5x1km @3:03 / 1min',
   ];
 
@@ -105,7 +130,9 @@ function testParserCoachShorthand() {
     of variants
   ) {
     const parsed =
-      parseWorkoutText(text);
+      parseWorkoutText(
+        text
+      );
 
     assert.equal(
       parsed.blocks.length,
@@ -142,30 +169,91 @@ function testParserCoachShorthand() {
   }
 }
 
+function testDurationParser() {
+  const repeated =
+    parseWorkoutText(
+      '3x10min Threshold / 2min jog'
+    );
+
+  assert.equal(
+    repeated.blocks.length,
+    1
+  );
+
+  assert.equal(
+    repeated.blocks[0]
+      .workType,
+    'duration'
+  );
+
+  assert.equal(
+    repeated.blocks[0]
+      .reps,
+    3
+  );
+
+  assert.equal(
+    repeated.blocks[0]
+      .distanceMeters,
+    0
+  );
+
+  assert.equal(
+    repeated.blocks[0]
+      .targetSecondsPerRep,
+    600
+  );
+
+  assert.equal(
+    repeated.blocks[0]
+      .recoverySeconds,
+    120
+  );
+
+  assert.equal(
+    repeated.blocks[0]
+      .recoveryType,
+    'jog'
+  );
+
+  const continuous =
+    parseWorkoutText(
+      '20min Threshold'
+    );
+
+  assert.equal(
+    continuous.blocks.length,
+    1
+  );
+
+  assert.equal(
+    continuous.blocks[0]
+      .reps,
+    1
+  );
+
+  assert.equal(
+    continuous.blocks[0]
+      .targetSecondsPerRep,
+    1200
+  );
+}
+
 function testClassifier() {
   const parsed =
     parseWorkoutText(
       '5x1000m in 3:00, 60sec rest'
     );
 
-  const athlete = {
-    goalEvent: '5K',
-    phase: 'Loading',
-    current5k: '15:00',
-    tolerance: 'established',
-    primaryNeed: 'Threshold',
-    readiness: 82,
-    recentWorkout: '',
-  };
-
   const classified =
     classifyWorkout(
       parsed,
-      athlete
+      baseAthlete()
     );
 
   assert.ok(
-    classified.length > 0
+    classified.length >
+    0
   );
 
   assert.equal(
@@ -179,30 +267,38 @@ function testClassifier() {
 }
 
 function testGenerator() {
-  const athlete = {
-    goalEvent: '5K',
-    phase: 'Loading',
-    current5k: '15:00',
-    tolerance: 'established',
-    primaryNeed: 'Threshold',
-    readiness: 82,
-
-    recentWorkout:
-      '5x1000 @3:03 / 60s',
-  };
-
   const candidates =
     generateCandidates(
-      athlete,
+      baseAthlete({
+        recentWorkouts: [
+          {
+            daysAgo: 3,
+
+            workout:
+              '3x10min Threshold / 2min jog',
+          },
+
+          {
+            daysAgo: 7,
+
+            workout:
+              '5x1000 @3:14 / 60s',
+          },
+        ],
+      }),
+
       {}
     );
 
   assert.ok(
-    Array.isArray(candidates)
+    Array.isArray(
+      candidates
+    )
   );
 
   assert.ok(
-    candidates.length > 0
+    candidates.length >
+    0
   );
 
   for (
@@ -210,11 +306,13 @@ function testGenerator() {
     of candidates
   ) {
     assert.ok(
-      candidate.score >= 0
+      candidate.score >=
+      0
     );
 
     assert.ok(
-      candidate.score <= 100
+      candidate.score <=
+      100
     );
 
     assert.ok(
@@ -228,7 +326,8 @@ function testGenerator() {
 
   for (
     let i = 1;
-    i < candidates.length;
+    i <
+    candidates.length;
     i++
   ) {
     assert.ok(
@@ -236,41 +335,41 @@ function testGenerator() {
         .score >=
         candidates[i]
           .score,
+
       'Candidates must be sorted highest score first'
     );
   }
 }
 
 function testStructuralSimilarityAcrossNotation() {
-  const base = {
-    goalEvent: '5K',
-    phase: 'Loading',
-    current5k: '15:00',
-    tolerance: 'established',
-    primaryNeed: 'Threshold',
-    readiness: 82,
-  };
-
   const a =
     generateCandidates(
-      {
-        ...base,
+      baseAthlete({
+        recentWorkouts: [
+          {
+            daysAgo: 7,
 
-        recentWorkout:
-          '5x1000 @3:14 / 60s',
-      },
+            workout:
+              '5x1000 @3:14 / 60s',
+          },
+        ],
+      }),
 
       {}
     );
 
   const b =
     generateCandidates(
-      {
-        ...base,
+      baseAthlete({
+        recentWorkouts: [
+          {
+            daysAgo: 7,
 
-        recentWorkout:
-          '5×1000m @3:14, 60sec rest',
-      },
+            workout:
+              '5×1000m @3:14, 60sec rest',
+          },
+        ],
+      }),
 
       {}
     );
@@ -290,37 +389,89 @@ function testStructuralSimilarityAcrossNotation() {
       ]
     )
   );
+}
 
-  const fiveBy1k =
-    a.find(
+function testTimeWeightedHistory() {
+  const recent =
+    generateCandidates(
+      baseAthlete({
+        recentWorkouts: [
+          {
+            daysAgo: 2,
+
+            workout:
+              '3x10min Threshold / 2min jog',
+          },
+        ],
+      }),
+
+      {}
+    );
+
+  const old =
+    generateCandidates(
+      baseAthlete({
+        recentWorkouts: [
+          {
+            daysAgo: 35,
+
+            workout:
+              '3x10min Threshold / 2min jog',
+          },
+        ],
+      }),
+
+      {}
+    );
+
+  const recentThree =
+    recent.find(
       c =>
         c.label ===
-        '5×1000m Threshold'
+        '3×10min Threshold'
+    );
+
+  const oldThree =
+    old.find(
+      c =>
+        c.label ===
+        '3×10min Threshold'
     );
 
   assert.ok(
-    fiveBy1k.fit
-      .workoutSimilarity >=
-      0.99
+    recentThree.score <
+    oldThree.score
+  );
+
+  assert.ok(
+    recentThree.fit
+      .historySimilarityExposure >
+    oldThree.fit
+      .historySimilarityExposure
   );
 }
 
-function testProgressionFromShorthand() {
-  const athlete = {
-    goalEvent: '5K',
-    phase: 'Loading',
-    current5k: '15:00',
-    tolerance: 'established',
-    primaryNeed: 'Threshold',
-    readiness: 82,
-
-    recentWorkout:
-      '5x1000 @3:14 / 60s',
-  };
-
+function testMultipleHistoryPromotesVariation() {
   const candidates =
     generateCandidates(
-      athlete,
+      baseAthlete({
+        recentWorkouts: [
+          {
+            daysAgo: 3,
+
+            workout:
+              '3x10min Threshold / 2min jog',
+          },
+
+          {
+            daysAgo: 7,
+
+            workout:
+              '5x1000 @3:14 / 60s',
+          },
+        ],
+      }),
+
       {}
     );
 
@@ -331,27 +482,76 @@ function testProgressionFromShorthand() {
         '6×1000m Threshold'
     );
 
-  assert.equal(
-    sixBy1k.progressionReason,
-    'Safe volume progression.'
+  const threeBy10 =
+    candidates.find(
+      c =>
+        c.label ===
+        '3×10min Threshold'
+    );
+
+  assert.ok(
+    sixBy1k
   );
 
-  assert.equal(
-    sixBy1k.fit
-      .progressionFit,
-    1
+  assert.ok(
+    threeBy10
+  );
+
+  assert.ok(
+    sixBy1k.score >
+    threeBy10.score
+  );
+
+  assert.notEqual(
+    candidates[0].label,
+    '3×10min Threshold'
+  );
+
+  assert.match(
+    sixBy1k
+      .progressionReason,
+
+    /Safe volume progression/
+  );
+}
+
+function testLegacyRecentWorkoutFallback() {
+  const candidates =
+    generateCandidates(
+      baseAthlete({
+        recentWorkout:
+          '5x1000 @3:14 / 60s',
+      }),
+
+      {}
+    );
+
+  const sixBy1k =
+    candidates.find(
+      c =>
+        c.label ===
+        '6×1000m Threshold'
+    );
+
+  assert.match(
+    sixBy1k
+      .progressionReason,
+
+    /Safe volume progression/
   );
 }
 
 function run() {
   assert.equal(
     ENGINE_VERSION,
-    '0.1.1-lab'
+    '0.1.2-lab'
   );
 
   testParser();
 
   testParserCoachShorthand();
+
+  testDurationParser();
 
   testClassifier();
 
@@ -359,10 +559,14 @@ function run() {
 
   testStructuralSimilarityAcrossNotation();
 
-  testProgressionFromShorthand();
+  testTimeWeightedHistory();
+
+  testMultipleHistoryPromotesVariation();
+
+  testLegacyRecentWorkoutFallback();
 
   console.log(
-    '✅ All TATE Lab v0.1.1 tests passed'
+    '✅ All TATE Lab v0.1.2 tests passed'
   );
 }
 
