@@ -1,5 +1,5 @@
 export const ENGINE_VERSION =
-  '0.1.1-lab';
+  '0.1.2-lab';
 
 export const scoringWeights =
   Object.freeze({
@@ -16,10 +16,16 @@ export const scoringWeights =
 export const penalties =
   Object.freeze({
     recentSimilarityMax: 8,
+
     similarityTauDays: 14,
+
+    historyExposureCap: 1.5,
+
     progressionRepeatRelief:
       0.75,
+
     complexityMax: 4,
+
     noveltyMax: 4,
   });
 
@@ -99,7 +105,7 @@ export const eventCompositeRules =
 export const racePhaseBias =
   Object.freeze({
     Base: {
-      simplicity: 1.0,
+      simplicity: 1,
       specificity: 0.65,
     },
 
@@ -110,11 +116,11 @@ export const racePhaseBias =
 
     Sharpening: {
       simplicity: 0.85,
-      specificity: 1.0,
+      specificity: 1,
     },
 
     Taper: {
       simplicity: 0.95,
-      specificity: 1.0,
+      specificity: 1,
     },
   });
