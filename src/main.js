@@ -20,7 +20,7 @@ import {
   schedulePlanIntoWeeks,
 } from './tate-engine/week-scheduler.js';
 
-const LAB_VERSION = '0.4.2-weekly-availability';
+const LAB_VERSION = '0.5.0-secondary-need-machine';
 const $ = id => document.getElementById(id);
 
 let workoutLibrary = [];
@@ -50,7 +50,9 @@ function readScores() {
 
 function trainingDaysPerWeek() {
   return WEEKDAYS.filter(
-    day => weekRuleState[day] !== DAY_ROLES.UNAVAILABLE
+    day =>
+      weekRuleState[day] !==
+      DAY_ROLES.UNAVAILABLE
   ).length;
 }
 
@@ -61,6 +63,14 @@ function currentWeekRule() {
   };
 }
 
+function hasLongRunDay() {
+  return WEEKDAYS.some(
+    day =>
+      weekRuleState[day] ===
+      DAY_ROLES.LONG_RUN
+  );
+}
+
 function renderWeekRuleEditor() {
   const target = $('week-rules');
   const count = trainingDaysPerWeek();
@@ -69,15 +79,39 @@ function renderWeekRuleEditor() {
     `${count} Training Day${count === 1 ? '' : 's'} / Week`;
 
   target.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(7,minmax(124px,1fr));gap:8px;overflow-x:auto;">
+    <div
+      style="
+        display:grid;
+        grid-template-columns:repeat(7,minmax(124px,1fr));
+        gap:8px;
+        overflow-x:auto;
+      "
+    >
       ${WEEKDAYS.map(day => {
-        const role = weekRuleState[day] || DAY_ROLES.EASY;
-        const enabled = role !== DAY_ROLES.UNAVAILABLE;
-        const activeRole = enabled ? role : DAY_ROLES.EASY;
+        const role =
+          weekRuleState[day] ||
+          DAY_ROLES.EASY;
+
+        const enabled =
+          role !== DAY_ROLES.UNAVAILABLE;
+
+        const activeRole = enabled
+          ? role
+          : DAY_ROLES.EASY;
 
         return `
-          <div class="library-role" style="min-width:124px;">
-            <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <div
+            class="library-role"
+            style="min-width:124px;"
+          >
+            <label
+              style="
+                display:flex;
+                align-items:center;
+                gap:8px;
+                margin-bottom:10px;
+              "
+            >
               <input
                 type="checkbox"
                 data-training-day
@@ -85,7 +119,10 @@ function renderWeekRuleEditor() {
                 ${enabled ? 'checked' : ''}
                 style="width:auto;"
               />
-              <strong style="color:var(--text);">${WEEKDAY_LABELS[day]}</strong>
+
+              <strong style="color:var(--text);">
+                ${WEEKDAY_LABELS[day]}
+              </strong>
             </label>
 
             <select
@@ -93,15 +130,57 @@ function renderWeekRuleEditor() {
               data-day="${day}"
               ${enabled ? '' : 'disabled'}
             >
-              <option value="easy" ${activeRole === DAY_ROLES.EASY ? 'selected' : ''}>Easy</option>
-              <option value="workout" ${activeRole === DAY_ROLES.WORKOUT ? 'selected' : ''}>Workout Day</option>
-              <option value="long_run" ${activeRole === DAY_ROLES.LONG_RUN ? 'selected' : ''}>Long Run Day</option>
+              <option
+                value="easy"
+                ${
+                  activeRole === DAY_ROLES.EASY
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Easy
+              </option>
+
+              <option
+                value="workout"
+                ${
+                  activeRole === DAY_ROLES.WORKOUT
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Workout Day
+              </option>
+
+              <option
+                value="long_run"
+                ${
+                  activeRole === DAY_ROLES.LONG_RUN
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Long Run Day
+              </option>
             </select>
 
-            <div class="muted" style="margin-top:7px;">
-              ${enabled
-                ? escapeHtml(DAY_ROLE_LABELS[activeRole])
-                : escapeHtml(DAY_ROLE_LABELS[DAY_ROLES.UNAVAILABLE])}
+            <div
+              class="muted"
+              style="margin-top:7px;"
+            >
+              ${
+                enabled
+                  ? escapeHtml(
+                      DAY_ROLE_LABELS[
+                        activeRole
+                      ]
+                    )
+                  : escapeHtml(
+                      DAY_ROLE_LABELS[
+                        DAY_ROLES.UNAVAILABLE
+                      ]
+                    )
+              }
             </div>
           </div>
         `;
@@ -127,91 +206,252 @@ function renderLibrary() {
         workoutLibrary,
         workout => workout.stimulus
       )
-    : workoutLibrary.reduce((map, workout) => {
-        const list = map.get(workout.stimulus) || [];
-        list.push(workout);
-        map.set(workout.stimulus, list);
-        return map;
-      }, new Map());
+    : workoutLibrary.reduce(
+        (map, workout) => {
+          const list =
+            map.get(workout.stimulus) || [];
 
-  target.innerHTML = [...byStimulus.entries()]
-    .map(([stimulus, workouts]) => {
-      const priority = workouts.filter(
-        workout => workout.role === 'priority'
+          list.push(workout);
+          map.set(
+            workout.stimulus,
+            list
+          );
+
+          return map;
+        },
+        new Map()
       );
-      const coverage = workouts.filter(
-        workout => workout.role === 'coverage'
-      );
 
-      const renderGroup = (title, items) => `
-        <div class="library-role">
-          <div class="role-title">${title}</div>
-          ${
-            items.length
-              ? items
-                  .map(
-                    workout => `
-                      <div class="library-workout">
-                        <div>
-                          <strong>${escapeHtml(workout.id)}</strong>
-                          <span class="tag">${escapeHtml(
-                            workout.structureType
-                          )}</span>
-                        </div>
-                        <div class="muted">
-                          ${escapeHtml(workout.status)} · ${
-                            workout.blocks.length
-                          } block${
-                            workout.blocks.length === 1 ? '' : 's'
-                          }
-                        </div>
-                      </div>
-                    `
-                  )
-                  .join('')
-              : '<div class="muted">None</div>'
-          }
-        </div>
-      `;
+  target.innerHTML =
+    [...byStimulus.entries()]
+      .map(([stimulus, workouts]) => {
+        const priority =
+          workouts.filter(
+            workout =>
+              workout.role === 'priority'
+          );
 
-      return `
-        <article class="library-section">
-          <div class="stimulus-heading">
-            <h3>${escapeHtml(stimulus)}</h3>
-            <span>${workouts.length} workout${
-              workouts.length === 1 ? '' : 's'
-            }</span>
+        const coverage =
+          workouts.filter(
+            workout =>
+              workout.role === 'coverage'
+          );
+
+        const renderGroup = (
+          title,
+          items
+        ) => `
+          <div class="library-role">
+            <div class="role-title">
+              ${title}
+            </div>
+
+            ${
+              items.length
+                ? items
+                    .map(
+                      workout => `
+                        <div class="library-workout">
+                          <div>
+                            <strong>
+                              ${escapeHtml(
+                                workout.id
+                              )}
+                            </strong>
+
+                            <span class="tag">
+                              ${escapeHtml(
+                                workout.structureType
+                              )}
+                            </span>
+                          </div>
+
+                          <div class="muted">
+                            ${escapeHtml(
+                              workout.status
+                            )}
+                            ·
+                            ${
+                              workout.blocks.length
+                            }
+                            block${
+                              workout.blocks.length === 1
+                                ? ''
+                                : 's'
+                            }
+                          </div>
+                        </div>
+                      `
+                    )
+                    .join('')
+                : '<div class="muted">None</div>'
+            }
           </div>
-          <div class="library-columns">
-            ${renderGroup('Priority', priority)}
-            ${renderGroup('Coverage', coverage)}
-          </div>
-        </article>
-      `;
-    })
-    .join('');
+        `;
+
+        return `
+          <article class="library-section">
+            <div class="stimulus-heading">
+              <h3>
+                ${escapeHtml(stimulus)}
+              </h3>
+
+              <span>
+                ${workouts.length}
+                workout${
+                  workouts.length === 1
+                    ? ''
+                    : 's'
+                }
+              </span>
+            </div>
+
+            <div class="library-columns">
+              ${renderGroup(
+                'Priority',
+                priority
+              )}
+
+              ${renderGroup(
+                'Coverage',
+                coverage
+              )}
+            </div>
+          </article>
+        `;
+      })
+      .join('');
 }
 
 function renderAllocation(counts) {
-  $('allocation-summary').innerHTML = counts
-    .map(
-      item => `
-        <div class="allocation-chip">
-          <strong>${escapeHtml(item.section)}</strong>
-          <span>${item.count}</span>
-        </div>
-      `
-    )
-    .join('');
+  $('allocation-summary').innerHTML =
+    counts
+      .map(
+        item => `
+          <div class="allocation-chip">
+            <strong>
+              ${escapeHtml(item.section)}
+            </strong>
+
+            <span>
+              ${item.count}
+            </span>
+          </div>
+        `
+      )
+      .join('');
+}
+
+function renderSecondarySummary(plan) {
+  const target = $('secondary-summary');
+
+  const summary =
+    plan.secondarySummary || {};
+
+  const rows = [
+    {
+      label: 'Normal Aerobic',
+      value:
+        summary.normalAerobic || 0,
+    },
+    {
+      label: 'Long Run',
+      value:
+        summary.longRun || 0,
+    },
+    {
+      label: 'Strides',
+      value:
+        summary.strides || 0,
+    },
+    {
+      label: 'Progressive',
+      value:
+        summary.progressive || 0,
+    },
+    {
+      label: 'Threshold',
+      value:
+        summary.threshold || 0,
+    },
+    {
+      label: 'Race Specific',
+      value:
+        summary.raceSpecific || 0,
+    },
+    {
+      label: 'Durability',
+      value:
+        summary.durability || 0,
+    },
+    {
+      label: 'VO₂max',
+      value:
+        summary.vo2max || 0,
+    },
+    {
+      label: 'Speed',
+      value:
+        summary.speed || 0,
+    },
+    {
+      label: 'Sprint',
+      value:
+        summary.sprint || 0,
+    },
+    {
+      label: 'Hill Work',
+      value:
+        summary.hillWork || 0,
+    },
+  ];
+
+  target.innerHTML = `
+    <div class="allocation-summary">
+      ${rows
+        .filter(
+          item => item.value > 0
+        )
+        .map(
+          item => `
+            <div class="allocation-chip">
+              <strong>
+                ${escapeHtml(item.label)}
+              </strong>
+
+              <span>
+                ${item.value}
+              </span>
+            </div>
+          `
+        )
+        .join('')}
+    </div>
+  `;
 }
 
 function sessionTitle(assignment) {
-  if (!assignment) return 'No session';
+  if (!assignment) {
+    return 'No session';
+  }
 
   const selected =
     assignment.selectedStimulus ||
     assignment.primaryAnchor ||
     assignment.stimulus;
+
+  if (
+    assignment.secondaryTarget
+  ) {
+    const secondaryLabel =
+      SECONDARY_TARGET_LABELS[
+        assignment.secondaryTarget
+      ];
+
+    if (secondaryLabel) {
+      return secondaryLabel;
+    }
+  }
 
   return selected || 'Session';
 }
@@ -219,74 +459,147 @@ function sessionTitle(assignment) {
 function renderWeeklySchedule(schedule) {
   const target = $('weekly-plan');
 
-  const weekMarkup = schedule.weeks
-    .map(week => {
-      return `
+  const weekMarkup =
+    schedule.weeks
+      .map(week => `
         <article class="library-section">
           <div class="stimulus-heading">
-            <h3>Week ${week.week}</h3>
+            <h3>
+              Week ${week.week}
+            </h3>
+
             <span>
-              ${week.scheduledTrainingDays}/${week.trainingDays} selected training days used
-              ${week.hasLongRun ? ' · Long Run planned' : ''}
-              ${week.hasSpeed ? ' · Speed planned' : ''}
+              ${
+                week.scheduledTrainingDays
+              }/${
+                week.trainingDays
+              }
+              selected training days used
+              ${
+                week.hasLongRun
+                  ? ' · Long Run planned'
+                  : ''
+              }
+              ${
+                week.hasSpeed
+                  ? ' · Speed planned'
+                  : ''
+              }
             </span>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:8px;overflow-x:auto;">
-            ${week.days.map(day => {
-              const assignment = day.assignment;
-              const dbStatus = assignment
-                ? assignment.status === 'missing'
-                  ? 'DATABASE GAP'
-                  : assignment.workout?.id || 'Assigned'
-                : day.available
-                  ? 'Rest'
-                  : 'Unavailable';
-              const dayLabel = assignment
-                ? DAY_ROLE_LABELS[day.effectiveRole]
-                : day.available
-                  ? 'Rest Day'
-                  : 'Unavailable';
+          <div
+            style="
+              display:grid;
+              grid-template-columns:repeat(7,minmax(130px,1fr));
+              gap:8px;
+              overflow-x:auto;
+            "
+          >
+            ${week.days
+              .map(day => {
+                const assignment =
+                  day.assignment;
 
-              return `
-                <div class="library-role" style="min-width:130px;">
-                  <div class="role-title">
-                    ${WEEKDAY_LABELS[day.day]} · ${escapeHtml(
-                      dayLabel
-                    )}
+                const dbStatus =
+                  assignment
+                    ? assignment.status ===
+                      'missing'
+                      ? 'DATABASE GAP'
+                      : assignment.workout?.id ||
+                        'Assigned'
+                    : day.available
+                      ? 'Rest'
+                      : 'Unavailable';
+
+                const dayLabel =
+                  assignment
+                    ? DAY_ROLE_LABELS[
+                        day.effectiveRole
+                      ]
+                    : day.available
+                      ? 'Rest Day'
+                      : 'Unavailable';
+
+                return `
+                  <div
+                    class="library-role"
+                    style="min-width:130px;"
+                  >
+                    <div class="role-title">
+                      ${
+                        WEEKDAY_LABELS[
+                          day.day
+                        ]
+                      }
+                      ·
+                      ${escapeHtml(
+                        dayLabel
+                      )}
+                    </div>
+
+                    <div>
+                      <strong>
+                        ${escapeHtml(
+                          assignment
+                            ? sessionTitle(
+                                assignment
+                              )
+                            : 'Rest'
+                        )}
+                      </strong>
+                    </div>
+
+                    <div class="muted">
+                      ${escapeHtml(
+                        dbStatus
+                      )}
+                    </div>
+
+                    ${
+                      day.placementReason
+                        ? `
+                          <div
+                            class="muted"
+                            style="margin-top:6px;"
+                          >
+                            ${escapeHtml(
+                              day.placementReason
+                            )}
+                          </div>
+                        `
+                        : ''
+                    }
                   </div>
-                  <div>
-                    <strong>${escapeHtml(
-                      assignment
-                        ? sessionTitle(assignment)
-                        : 'Rest'
-                    )}</strong>
-                  </div>
-                  <div class="muted">
-                    ${escapeHtml(dbStatus)}
-                  </div>
-                  ${
-                    day.placementReason
-                      ? `<div class="muted" style="margin-top:6px;">${escapeHtml(
-                          day.placementReason
-                        )}</div>`
-                      : ''
-                  }
-                </div>
-              `;
-            }).join('')}
+                `;
+              })
+              .join('')}
           </div>
 
           ${
             week.unscheduled.length
               ? `
-                <div class="empty-state error-text" style="margin-top:12px;">
-                  <strong>SCHEDULE GAP</strong><br />
+                <div
+                  class="empty-state error-text"
+                  style="margin-top:12px;"
+                >
+                  <strong>
+                    SCHEDULE GAP
+                  </strong>
+                  <br />
+
                   ${week.unscheduled
                     .map(
-                      item => `${escapeHtml(
-                        sessionTitle(item.assignment)
-                      )}: ${escapeHtml(item.reason)}`
+                      item => `
+                        ${escapeHtml(
+                          sessionTitle(
+                            item.assignment
+                          )
+                        )}:
+                        ${escapeHtml(
+                          item.reason
+                        )}
+                      `
                     )
                     .join('<br />')}
                 </div>
@@ -294,197 +607,332 @@ function renderWeeklySchedule(schedule) {
               : ''
           }
         </article>
-      `;
-    })
-    .join('');
+      `)
+      .join('');
 
-  const gapMarkup = schedule.unscheduled.length
-    ? `
+  const gapMarkup =
+    schedule.unscheduled.length
+      ? `
         <div class="empty-state error-text">
-          <strong>SCHEDULE GAP</strong><br />
+          <strong>
+            SCHEDULE GAP
+          </strong>
+          <br />
+
           ${schedule.unscheduled
             .map(
-              item => `${escapeHtml(
-                sessionTitle(item.assignment)
-              )}: ${escapeHtml(item.reason)}`
+              item => `
+                ${escapeHtml(
+                  sessionTitle(
+                    item.assignment
+                  )
+                )}:
+                ${escapeHtml(
+                  item.reason
+                )}
+              `
             )
             .join('<br />')}
         </div>
       `
-    : '';
+      : '';
 
-  target.innerHTML = weekMarkup + gapMarkup;
+  target.innerHTML =
+    weekMarkup + gapMarkup;
 }
 
-function renderPlan(plan, schedule) {
+function renderPlan(
+  plan,
+  schedule
+) {
   renderAllocation(plan.counts);
+  renderSecondarySummary(plan);
   renderWeeklySchedule(schedule);
 
   const scores = readScores();
-  const current10k = $('current-10k').value;
+  const current10k =
+    $('current-10k').value;
 
-  $('goal-plan').innerHTML = plan.assignments
-    .map(assignment => {
-      const secondary = assignment.secondaryTarget
-        ? SECONDARY_TARGET_LABELS[
-            assignment.secondaryTarget
-          ] || assignment.secondaryTarget
-        : null;
+  $('goal-plan').innerHTML =
+    plan.assignments
+      .map(assignment => {
+        const secondary =
+          assignment.secondaryTarget
+            ? SECONDARY_TARGET_LABELS[
+                assignment.secondaryTarget
+              ] ||
+              assignment.secondaryTarget
+            : null;
 
-      if (assignment.status === 'missing') {
+        if (
+          assignment.status ===
+          'missing'
+        ) {
+          return `
+            <article class="slot-card missing">
+              <div class="slot-index">
+                ${assignment.slot}
+              </div>
+
+              <div class="slot-main">
+                <div class="slot-topline">
+                  <strong>
+                    ${escapeHtml(
+                      assignment.primaryAnchor
+                    )}
+                  </strong>
+
+                  <span class="missing-badge">
+                    DATABASE GAP
+                  </span>
+                </div>
+
+                ${
+                  secondary
+                    ? `
+                      <div class="workout-meta">
+                        Secondary need:
+                        ${escapeHtml(
+                          secondary
+                        )}
+                      </div>
+                    `
+                    : ''
+                }
+
+                <div class="missing-title">
+                  NO ELIGIBLE DATABASE WORKOUT
+                </div>
+
+                <div class="muted">
+                  ${escapeHtml(
+                    assignment.reason
+                  )}
+                </div>
+              </div>
+            </article>
+          `;
+        }
+
+        const workout =
+          materializeWorkout(
+            assignment.workout,
+            {
+              score:
+                scores[
+                  assignment.primaryAnchor
+                ] ?? 50,
+              current10k,
+            }
+          );
+
+        const lines =
+          formatMaterializedWorkout(
+            workout
+          );
+
         return `
-          <article class="slot-card missing">
-            <div class="slot-index">${assignment.slot}</div>
+          <article class="slot-card">
+            <div class="slot-index">
+              ${assignment.slot}
+            </div>
+
             <div class="slot-main">
               <div class="slot-topline">
-                <strong>${escapeHtml(
-                  assignment.primaryAnchor
-                )}</strong>
-                <span class="missing-badge">DATABASE GAP</span>
+                <strong>
+                  ${escapeHtml(
+                    assignment.primaryAnchor
+                  )}
+                </strong>
+
+                <span
+                  class="role-badge ${
+                    assignment.workout.role
+                  }"
+                >
+                  ${escapeHtml(
+                    assignment.workout.role
+                  )}
+                </span>
               </div>
+
               ${
                 secondary
-                  ? `<div class="workout-meta">Secondary need: ${escapeHtml(
-                      secondary
-                    )}</div>`
-                  : ''
+                  ? `
+                    <div class="workout-meta">
+                      Secondary need:
+                      ${escapeHtml(
+                        secondary
+                      )}
+                      · Mode:
+                      ${escapeHtml(
+                        assignment.selectionMode
+                      )}
+                    </div>
+                  `
+                  : `
+                    <div class="workout-meta">
+                      Mode: Primary
+                    </div>
+                  `
               }
-              <div class="missing-title">
-                NO ELIGIBLE DATABASE WORKOUT
+
+              <div class="workout-id">
+                ${escapeHtml(
+                  assignment.workout.id
+                )}
               </div>
-              <div class="muted">
-                ${escapeHtml(assignment.reason)}
+
+              <div class="workout-meta">
+                Athlete score
+                ${workout.athleteScore}
+                · Band
+                ${workout.performanceBand}
+                · Group
+                ${workout.scoreGroup}
+              </div>
+
+              <div class="workout-lines">
+                ${lines
+                  .map(
+                    line => `
+                      <div>
+                        ${escapeHtml(
+                          line
+                        )}
+                      </div>
+                    `
+                  )
+                  .join('')}
+              </div>
+
+              <div class="selection-reason">
+                ${escapeHtml(
+                  assignment.reason
+                )}
               </div>
             </div>
           </article>
         `;
-      }
+      })
+      .join('');
 
-      const workout = materializeWorkout(
-        assignment.workout,
-        {
-          score:
-            scores[assignment.primaryAnchor] ?? 50,
-          current10k,
-        }
-      );
+  const missing =
+    plan.assignments.filter(
+      item =>
+        item.status === 'missing'
+    ).length;
 
-      const lines = formatMaterializedWorkout(workout);
-
-      return `
-        <article class="slot-card">
-          <div class="slot-index">${assignment.slot}</div>
-          <div class="slot-main">
-            <div class="slot-topline">
-              <strong>${escapeHtml(
-                assignment.primaryAnchor
-              )}</strong>
-              <span class="role-badge ${
-                assignment.workout.role
-              }">
-                ${escapeHtml(assignment.workout.role)}
-              </span>
-            </div>
-
-            ${
-              secondary
-                ? `<div class="workout-meta">
-                    Secondary need: ${escapeHtml(
-                      secondary
-                    )} · Mode: ${escapeHtml(
-                      assignment.selectionMode
-                    )}
-                  </div>`
-                : `<div class="workout-meta">Mode: Primary</div>`
-            }
-
-            <div class="workout-id">
-              ${escapeHtml(assignment.workout.id)}
-            </div>
-
-            <div class="workout-meta">
-              Athlete score ${workout.athleteScore} · Band ${
-                workout.performanceBand
-              } · Group ${workout.scoreGroup}
-            </div>
-
-            <div class="workout-lines">
-              ${lines
-                .map(
-                  line => `<div>${escapeHtml(line)}</div>`
-                )
-                .join('')}
-            </div>
-
-            <div class="selection-reason">
-              ${escapeHtml(assignment.reason)}
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join('');
-
-  const missing = plan.assignments.filter(
-    item => item.status === 'missing'
-  ).length;
   const phaseLabel =
-    TRAINING_PHASE_LABELS[plan.phase] || plan.phase;
-  const scheduleGaps = schedule.unscheduledCount;
+    TRAINING_PHASE_LABELS[
+      plan.phase
+    ] || plan.phase;
+
+  const scheduleGaps =
+    schedule.unscheduledCount;
 
   const parts = [
     phaseLabel,
     `${plan.slotCount} slots`,
     `${schedule.trainingDaysPerWeek} training days/week`,
-    `${missing} database gap${missing === 1 ? '' : 's'}`,
-    `${scheduleGaps} schedule gap${scheduleGaps === 1 ? '' : 's'}`,
+    `${missing} database gap${
+      missing === 1 ? '' : 's'
+    }`,
+    `${scheduleGaps} schedule gap${
+      scheduleGaps === 1 ? '' : 's'
+    }`,
   ];
 
-  $('plan-status').textContent = parts.join(' · ');
+  $('plan-status').textContent =
+    parts.join(' · ');
 }
 
 function buildSimulation() {
-  const slotCount = Number($('slot-count').value);
+  const slotCount = Number(
+    $('slot-count').value
+  );
+
   renderWeekRuleEditor();
+
+  const trainingDays =
+    trainingDaysPerWeek();
+
+  const estimatedWeeks =
+    trainingDays > 0
+      ? Math.max(
+          1,
+          Math.ceil(
+            slotCount /
+            trainingDays
+          )
+        )
+      : 1;
 
   const plan = buildGoalPlan({
     event: '10K',
-    phase: $('training-phase').value,
+    phase:
+      $('training-phase').value,
     slotCount,
     scores: readScores(),
     workouts: workoutLibrary,
+
+    secondaryNeedConfig: {
+      enabled: true,
+
+      estimatedWeeks,
+
+      weeklyLongRun:
+        hasLongRunDay(),
+    },
   });
 
-  const schedule = schedulePlanIntoWeeks(
-    plan.assignments,
-    currentWeekRule()
-  );
+  const schedule =
+    schedulePlanIntoWeeks(
+      plan.assignments,
+      currentWeekRule()
+    );
 
-  renderPlan(plan, schedule);
+  renderPlan(
+    plan,
+    schedule
+  );
 }
 
 async function loadDatabase() {
-  $('db-status').textContent = 'Loading Supabase…';
-  $('db-status').className = 'status-pill';
+  $('db-status').textContent =
+    'Loading Supabase…';
+
+  $('db-status').className =
+    'status-pill';
 
   try {
-    workoutLibrary = await loadWorkoutLibrary({
-      event: '10K',
-    });
+    workoutLibrary =
+      await loadWorkoutLibrary({
+        event: '10K',
+      });
 
-    $('db-status').textContent = `${workoutLibrary.length} live workouts`;
-    $('db-status').className = 'status-pill success';
+    $('db-status').textContent =
+      `${workoutLibrary.length} live workouts`;
+
+    $('db-status').className =
+      'status-pill success';
 
     renderLibrary();
     buildSimulation();
   } catch (error) {
     console.error(error);
-    $('db-status').textContent = 'Supabase load failed';
-    $('db-status').className = 'status-pill error';
+
+    $('db-status').textContent =
+      'Supabase load failed';
+
+    $('db-status').className =
+      'status-pill error';
 
     $('workout-library').innerHTML = `
       <div class="empty-state error-text">
-        ${escapeHtml(error.message)}
+        ${escapeHtml(
+          error.message
+        )}
       </div>
     `;
   }
@@ -498,48 +946,92 @@ function setDefaultScores() {
   };
 
   document
-    .querySelectorAll('[data-score]')
+    .querySelectorAll(
+      '[data-score]'
+    )
     .forEach(input => {
-      input.value = defaults[input.dataset.score] ?? 80;
+      input.value =
+        defaults[
+          input.dataset.score
+        ] ?? 80;
     });
 }
 
-$('engine-version').textContent = `Engine ${LAB_VERSION}`;
+$('engine-version').textContent =
+  `Engine ${LAB_VERSION}`;
 
-$('refresh-db').addEventListener('click', loadDatabase);
-$('build-goal').addEventListener('click', buildSimulation);
-$('training-phase').addEventListener('change', buildSimulation);
+$('refresh-db').addEventListener(
+  'click',
+  loadDatabase
+);
 
-$('slot-count').addEventListener('change', () => {
-  buildSimulation();
-});
+$('build-goal').addEventListener(
+  'click',
+  buildSimulation
+);
 
-$('current-10k').addEventListener('change', buildSimulation);
+$('training-phase').addEventListener(
+  'change',
+  buildSimulation
+);
 
-$('week-rules').addEventListener('change', event => {
-  const checkbox = event.target.closest('[data-training-day]');
-  const select = event.target.closest('[data-day-role]');
+$('slot-count').addEventListener(
+  'change',
+  buildSimulation
+);
 
-  if (checkbox) {
-    const day = checkbox.dataset.day;
-    weekRuleState[day] = checkbox.checked
-      ? DAY_ROLES.EASY
-      : DAY_ROLES.UNAVAILABLE;
-    buildSimulation();
-    return;
+$('current-10k').addEventListener(
+  'change',
+  buildSimulation
+);
+
+$('week-rules').addEventListener(
+  'change',
+  event => {
+    const checkbox =
+      event.target.closest(
+        '[data-training-day]'
+      );
+
+    const select =
+      event.target.closest(
+        '[data-day-role]'
+      );
+
+    if (checkbox) {
+      const day =
+        checkbox.dataset.day;
+
+      weekRuleState[day] =
+        checkbox.checked
+          ? DAY_ROLES.EASY
+          : DAY_ROLES.UNAVAILABLE;
+
+      buildSimulation();
+      return;
+    }
+
+    if (select) {
+      const day =
+        select.dataset.day;
+
+      weekRuleState[day] =
+        select.value;
+
+      buildSimulation();
+    }
   }
-
-  if (select) {
-    const day = select.dataset.day;
-    weekRuleState[day] = select.value;
-    buildSimulation();
-  }
-});
+);
 
 document
-  .querySelectorAll('[data-score]')
+  .querySelectorAll(
+    '[data-score]'
+  )
   .forEach(input =>
-    input.addEventListener('change', buildSimulation)
+    input.addEventListener(
+      'change',
+      buildSimulation
+    )
   );
 
 setDefaultScores();
