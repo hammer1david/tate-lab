@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>TATE Lab</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">TWETE ADAPTIVE TRAINING ENGINE</div>
+      <h1>TATE Lab</h1>
+    </div>
+    <div id="engine-version" class="version-pill"></div>
+  </header>
+
+  <main class="layout">
+    <section class="panel athlete-panel">
+      <div class="panel-heading">
+        <h2>1. Athlete Scenario</h2>
+        <button id="load-sample" class="ghost-btn">Load sample</button>
+      </div>
+
+      <div class="grid two">
+        <label>Goal event
+          <select id="goal-event">
+            <option>800m</option>
+            <option>1500m</option>
+            <option>3000m</option>
+            <option selected>5K</option>
+            <option>10K</option>
+            <option>HM</option>
+            <option>Marathon</option>
+          </select>
+        </label>
+        <label>Phase
+          <select id="phase">
+            <option>Base</option>
+            <option selected>Loading</option>
+            <option>Sharpening</option>
+            <option>Taper</option>
+          </select>
+        </label>
+        <label>Current 5K
+          <input id="current-5k" value="15:00" placeholder="15:00" />
+        </label>
+        <label>Training tolerance
+          <select id="tolerance">
+            <option value="low">Low</option>
+            <option value="established" selected>Established</option>
+            <option value="high">High</option>
+            <option value="very_high">Very high</option>
+          </select>
+        </label>
+        <label>Primary remaining need
+          <select id="primary-need">
+            <option value="Threshold" selected>Threshold</option>
+            <option value="VO2max">VO₂max</option>
+            <option value="SpeedEndurance">Speed Endurance</option>
+            <option value="Speed">Speed</option>
+            <option value="Durability">Durability</option>
+          </select>
+        </label>
+        <label>Readiness
+          <input id="readiness" type="number" min="0" max="100" value="82" />
+        </label>
+      </div>
+
+      <label>Recent comparable workout (optional)
+        <input id="recent-workout" value="5x1000 @3:03 / 60s" placeholder="e.g. 5x1000 @3:03 / 60s" />
+      </label>
+
+      <button id="generate" class="primary-btn">Generate workout candidates</button>
+    </section>
+
+    <section class="panel result-panel">
+      <div class="panel-heading">
+        <h2>2. TATE Decision</h2>
+        <div id="decision-status" class="status-text">No decision yet</div>
+      </div>
+      <div id="selected-workout" class="selected-card empty">Generate a scenario to begin.</div>
+      <div id="alternatives" class="alternatives"></div>
+    </section>
+
+    <section class="panel correction-panel">
+      <div class="panel-heading">
+        <h2>3. Coach Correction</h2>
+        <div class="small-note">Changes scores, not hard rules.</div>
+      </div>
+
+      <label>Write the workout the way a coach normally would
+        <textarea id="correction-text" rows="5" placeholder="6x1000m in 3:00, 2min rest + 5min jog between blocks + 5x200m in 36s, 30sec rest"></textarea>
+      </label>
+
+      <div class="button-row">
+        <button id="parse-correction" class="ghost-btn">Parse only</button>
+        <button id="apply-correction" class="primary-btn">Use as preferred correction</button>
+      </div>
+
+      <div id="parsed-correction" class="parse-output empty">No correction parsed.</div>
+    </section>
+
+    <section class="panel learning-panel">
+      <div class="panel-heading">
+        <h2>4. Learning State</h2>
+        <button id="reset-learning" class="danger-btn">Reset lab learning</button>
+      </div>
+      <div id="learning-state"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
