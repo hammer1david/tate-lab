@@ -217,7 +217,7 @@ assert.equal(
 assert.equal(
   result.weeks[1]
     .fullWeekTargetKm,
-  110.5
+  110
 );
 assert.equal(
   result.weeks[1]
@@ -227,13 +227,34 @@ assert.equal(
 assert.equal(
   result.weeks[1]
     .targetWeeklyKm,
-  66.5
+  66
 );
 assert.equal(
   result.weeks[1]
     .plannedKm,
-  66.5
+  66
 );
+
+for (
+  const week of schedule.weeks
+) {
+  for (
+    const day of week.days
+  ) {
+    if (
+      Number.isFinite(
+        day.plannedKm
+      )
+    ) {
+      assert.equal(
+        Number.isInteger(
+          day.plannedKm
+        ),
+        true
+      );
+    }
+  }
+}
 
 const incompleteSchedule = {
   trainingDaysPerWeek: 2,
