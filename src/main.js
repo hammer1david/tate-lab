@@ -34,6 +34,15 @@ const $ = id => document.getElementById(id);
 
 let workoutLibrary = [];
 let weekRuleState = blankWeekRule(1).days;
+let dailyFeedbackState = {
+  cursor: 0,
+  history: [],
+  completedSlots: new Set(),
+  completedDays: new Map(),
+  missedMakeupSlots: new Set(),
+};
+
+let lastSimulation = null;
 
 function escapeHtml(value) {
   return String(value ?? '')
