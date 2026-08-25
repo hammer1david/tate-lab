@@ -875,6 +875,20 @@ function buildSimulation() {
     $('slot-count').value
   );
 
+  const phase =
+    $('training-phase').value;
+
+  const longRunPhaseRule =
+    longRunPhaseRuleFor(phase);
+
+  const longRunAllowed =
+    longRunPhaseRule
+      ? longRunPhaseRule.long_run_allowed !== false &&
+        Number(
+          longRunPhaseRule.sessions_per_week ?? 1
+        ) === 1
+      : true;
+
   renderWeekRuleEditor();
 
   const trainingDays =
