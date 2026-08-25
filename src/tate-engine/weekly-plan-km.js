@@ -551,6 +551,11 @@ export function applyWeeklyKmPlanToSchedule({
   ) {
     return null;
   }
+  const distanceSelection =
+  applyDistanceSelectionLayer({
+    schedule,
+    phase,
+  });
 
   const volumeBand =
     performanceBandForScore(
@@ -767,13 +772,16 @@ export function applyWeeklyKmPlanToSchedule({
   }
 
   return {
-    performanceBand:
-      volumeBand,
-    phase,
-    startWeeklyKm:
-      startKm,
-    weeks,
-    plannedKmBySlot,
+  performanceBand:
+    volumeBand,
+  phase,
+  startWeeklyKm:
+    startKm,
+
+  distanceSelection,
+
+  weeks,
+  plannedKmBySlot,
     hasIncompleteWeeks:
       weeks.some(
         week =>
