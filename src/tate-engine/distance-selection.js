@@ -300,6 +300,7 @@ function selectAerobicWeek({
 
   let sameModeStreak = 0;
   let longerUsed = 0;
+  let forcedShortIndex = 0;
 
   const selections = [];
 
@@ -389,19 +390,44 @@ function selectAerobicWeek({
         mode
       );
 
-    const multiplierPosition =
-      avoidStreak &&
-      mode === lastMode
-        ? repeatedModePosition(
-            sameModeStreak
-          )
-        : 'default';
+    const forcedShort =
+  mode === 'short' &&
+  (
+    preQuality ||
+    postQuality
+  );
 
-    const multiplier =
-      profileMultiplier(
-        profile,
-        multiplierPosition
-      );
+const multiplierPosition =
+  forcedShort
+    ? 'default'
+    : avoidStreak &&
+        mode === lastMode
+      ? repeatedModePosition(
+          sameModeStreak
+        )
+      : 'default';
+
+const multiplier =
+  profileMultiplier(
+    profile,
+    multiplierPosition
+  );
+
+const distributionFactor =
+  forcedShort
+    ? FORCED_SHORT_DISTRIBUTION_PATTERN[
+        forcedShortIndex %
+        FORCED_SHORT_DISTRIBUTION_PATTERN.length
+      ]
+    : 1;
+
+if (forcedShort) {
+  forcedShortIndex += 1;
+}
+
+const budgetWeight =
+  multiplier *
+  distributionFactor;
 
     Object.assign(
       entry.day.assignment,
@@ -414,6 +440,12 @@ function selectAerobicWeek({
 
         aerobicDistanceMultiplier:
           multiplier,
+
+        distanceDistributionFactor:
+  distributionFactor,
+
+distanceBudgetWeight:
+  budgetWeight,
 
         distanceSelectionReason:
           reason,
@@ -433,6 +465,13 @@ function selectAerobicWeek({
       mode,
       paceLevel,
       multiplier,
+      distributionFactor,
+budgetWeight,
+
+sessionType:
+  entry.day.assignment
+    .workout
+    ?.dynamicType,
       multiplierPosition,
       reason,
     });
