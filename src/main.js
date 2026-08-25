@@ -647,6 +647,268 @@ function currentSimulationDay(schedule) {
   );
 }
 
+function feedbackText(feedback) {
+  if (!feedback) return '—';
+
+  const feeling =
+    TWETE_DAILY_FEEDBACK_LABELS
+      .feeling[feedback.feeling] ||
+    feedback.feeling;
+
+  const difficulty =
+    feedback.training_difficulty
+      ? TWETE_DAILY_FEEDBACK_LABELS
+          .training_difficulty[
+            feedback.training_difficulty
+          ] ||
+        feedback.training_difficulty
+      : '—';
+
+  const completion =
+    TWETE_DAILY_FEEDBACK_LABELS
+      .completion_status[
+        feedback.completion_status
+      ] ||
+    feedback.completion_status;
+
+  return (
+    `Feeling ${feeling} · ` +
+    `Training ${difficulty} · ` +
+    `Completion ${completion} · ` +
+    `Pain ${feedback.pain_severity}/10`
+  );
+}
+
+function optionMarkup(
+  values,
+  labels
+) {
+  return values
+    .map(
+      value => `
+        <option value="${value}">
+          ${escapeHtml(
+            labels[value]
+          )}
+        </option>
+      `
+    )
+    .join('');
+}
+
+function renderDailyFeedbackPanel(
+  schedule,
+  adaptation
+) {
+  const current =
+    currentSimulationDay(
+      schedule
+    );
+
+  const totalDays =
+    schedule.weeks.length * 7;
+
+  if (!current) {
+    return `
+      <div class="empty-state">
+        <strong>
+          Daily Feedback Simulation complete
+        </strong>
+
+        <br />
+
+        ${dailyFeedbackState.history.length}
+        TWETE check-ins processed.
+
+        <br /><br />
+
+        <button
+          type="button"
+          class="ghost-btn"
+          data-feedback-reset
+        >
+          Reset Daily Simulation
+        </button>
+      </div>
+    `;
+  }
+
+  const assignment =
+    current.day.assignment;
+
+  const planned =
+    assignment
+      ? `${sessionTitle(
+          assignment
+        )} · ${
+          assignment.workout?.id ||
+          'Assigned'
+        }`
+      : current.day.available
+        ? 'Rest Day'
+        : 'Unavailable / Rest';
+
+  return `
+    <div
+      class="library-section"
+      style="border-style:dashed;"
+    >
+      <div class="stimulus-heading">
+        <h3>
+          TWETE Daily Feedback Simulator
+        </h3>
+
+        <span>
+          Day ${
+            dailyFeedbackState.cursor + 1
+          }/${totalDays}
+
+          · Lab feedback balance ${
+            adaptation.feedbackBalance > 0
+              ? '+'
+              : ''
+          }${adaptation.feedbackBalance}
+        </span>
+      </div>
+
+      <div class="workout-meta">
+        Week ${current.week}
+        · ${
+          WEEKDAY_LABELS[
+            current.day.day
+          ]
+        }
+        · ${escapeHtml(planned)}
+      </div>
+
+      <div
+        class="simulation-grid"
+        style="margin-top:14px;"
+      >
+        <label>
+          How do you feel?
+
+          <select
+            data-feedback-field="feeling"
+          >
+            ${optionMarkup(
+              TWETE_DAILY_FEEDBACK_OPTIONS
+                .feeling,
+              TWETE_DAILY_FEEDBACK_LABELS
+                .feeling
+            )}
+          </select>
+        </label>
+
+        <label>
+          How was your training?
+
+          <select
+            data-feedback-field="training_difficulty"
+          >
+            ${optionMarkup(
+              TWETE_DAILY_FEEDBACK_OPTIONS
+                .training_difficulty,
+              TWETE_DAILY_FEEDBACK_LABELS
+                .training_difficulty
+            )}
+          </select>
+        </label>
+
+        <label>
+          Did you complete today’s training?
+
+          <select
+            data-feedback-field="completion_status"
+          >
+            ${optionMarkup(
+              TWETE_DAILY_FEEDBACK_OPTIONS
+                .completion_status,
+              TWETE_DAILY_FEEDBACK_LABELS
+                .completion_status
+            )}
+          </select>
+        </label>
+
+        <label>
+          Pain level (0–10)
+
+          <input
+            type="range"
+            min="0"
+            max="10"
+            value="0"
+            step="1"
+            data-feedback-field="pain_severity"
+          />
+        </label>
+
+        <label>
+          Where is the pain?
+
+          <input
+            type="text"
+            maxlength="120"
+            placeholder="e.g. Achilles, calf, knee"
+            data-feedback-field="pain_area"
+          />
+        </label>
+
+        <label>
+          Anything else? (optional)
+
+          <textarea
+            rows="2"
+            maxlength="1000"
+            placeholder="Add anything Puri should know..."
+            data-feedback-field="optional_comment"
+          ></textarea>
+        </label>
+      </div>
+
+      <div
+        class="muted"
+        data-feedback-error
+        style="margin-top:10px;"
+      ></div>
+
+      <div
+        style="
+          display:flex;
+          gap:8px;
+          flex-wrap:wrap;
+          margin-top:12px;
+        "
+      >
+        <button
+          type="button"
+          class="primary-btn"
+          data-feedback-submit
+        >
+          Submit TWETE Daily Feedback
+        </button>
+
+        <button
+          type="button"
+          class="ghost-btn"
+          data-feedback-reset
+        >
+          Reset
+        </button>
+      </div>
+
+      <div
+        class="muted"
+        style="margin-top:10px;"
+      >
+        Lab-only: these fields match TWETE's real
+        Daily Check-in payload. Past days stay
+        frozen and only the future plan is
+        re-scheduled.
+      </div>
+    </div>
+  `;
+}
 function renderWeeklySchedule(schedule) {
   const target = $('weekly-plan');
 
