@@ -846,7 +846,30 @@ function renderPlan(
   $('plan-status').textContent =
     parts.join(' · ');
 }
+function longRunPhaseRuleFor(phase) {
+  const phaseKey =
+    phase === 'tapering'
+      ? 'taper'
+      : phase;
 
+  const longRunWorkout =
+    workoutLibrary.find(
+      workout =>
+        workout.active !== false &&
+        workout.dynamicType === 'long_run'
+    );
+
+  return (
+    longRunWorkout
+      ?.dynamicConfig
+      ?.phaseRules
+      ?.find(
+        rule =>
+          rule.active !== false &&
+          rule.phase === phaseKey
+      ) || null
+  );
+}
 function buildSimulation() {
   const slotCount = Number(
     $('slot-count').value
