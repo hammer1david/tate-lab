@@ -117,6 +117,10 @@ export function trainingDaysInRule(rule = {}) {
 }
 
 export function sessionPlacementType(assignment = {}) {
+  if (assignment.feedbackMakeup === true) {
+    return 'workout';
+  }
+
   const primary = normalizeStimulus(
     assignment.primaryAnchor || assignment.stimulus
   );
@@ -352,11 +356,17 @@ export function schedulePlanIntoWeeks(
   }
 
   function calendarIndexForWeek(weekNumber) {
-    return Math.max(
-      0,
-      (weekNumber - 1) * trainingDaysPerWeek
+  return weeks
+    .filter(
+      week =>
+        week.week < weekNumber
+    )
+    .reduce(
+      (sum, week) =>
+        sum + week.trainingDays,
+      0
     );
-  }
+}
 
   function candidateDistance(item, targetIndex) {
     const calendarIndex = calendar.indexOf(item);
