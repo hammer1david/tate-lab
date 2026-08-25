@@ -29,7 +29,7 @@ import {
   missedSessionPolicy,
 } from './tate-engine/daily-feedback-simulator.js';
 
-const LAB_VERSION = '0.5.0-secondary-need-machine';
+const LAB_VERSION = '0.6.1-twete-daily-feedback';
 const $ = id => document.getElementById(id);
 
 let workoutLibrary = [];
