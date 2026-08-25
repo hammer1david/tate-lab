@@ -70,7 +70,7 @@ export function normalizePerformanceBand(value) {
 
 export function roundKm(
   value,
-  step = 0.5
+  step = 1
 ) {
   const km = nonNegativeNumber(
     value,
@@ -152,7 +152,7 @@ export function calculateLongRunKm({
   targetWeeklyKm,
   weeklyShare,
   maxDistanceKm = Infinity,
-  roundingStep = 0.5,
+  roundingStep = 1,
 } = {}) {
   const weeklyKm = positiveNumber(
     targetWeeklyKm,
@@ -390,8 +390,196 @@ export function allocateWeeklyKmBudget({
           session => ({
             ...session,
             plannedKm:
-              session.fixedKm +
+export function allocateWeeklyKmBudget({
+  targetWeeklyKm,
+  sessions = [],
+  roundingStep = 1,
+} = {}) {
+  const requestedTarget =
+    positiveNumber(
+      targetWeeklyKm,
+      'targetWeeklyKm'
+    );
+
+  const target =
+    roundKm(
+      requestedTarget,
+      roundingStep
+    );
+
+  const normalized =
+    sessions.map(
+      normalizeSession
+    );
+
+  const fixedSessions =
+    normalized.filter(
+      session =>
+        !session.flexible
+    );
+
+  const flexibleSessions =
+    normalized.filter(
+      session =>
+        session.flexible
+    );
+
+  /*
+   * Fixed sessions keep their exact workout
+   * structure internally.
+   *
+   * Only the weekly-km budget / displayed
+   * session total is rounded.
+   */
+  const fixedPlannedKmById =
+    new Map(
+      fixedSessions.map(
+        session => [
+          session.id,
+
+          roundKm(
+            session.fixedKm +
               session.addonKm,
+            roundingStep
+          ),
+        ]
+      )
+    );
+
+  const fixedSessionKm =
+    [...fixedPlannedKmById.values()]
+      .reduce(
+        (sum, km) =>
+          sum + km,
+        0
+      );
+
+  const flexibleAddonKm =
+    flexibleSessions.reduce(
+      (sum, session) =>
+        sum +
+        session.addonKm,
+      0
+    );
+
+  const flexibleMinimumKm =
+    flexibleSessions.reduce(
+      (sum, session) =>
+        sum +
+        session.minKm,
+      0
+    );
+
+  const reservedKm =
+    fixedSessionKm +
+    flexibleAddonKm +
+    flexibleMinimumKm;
+
+  const remainingKm =
+    target -
+    reservedKm;
+
+  if (
+    remainingKm <
+    -1e-9
+  ) {
+    const outputSessions =
+      normalized.map(
+        session => ({
+          ...session,
+
+          plannedKm:
+            session.flexible
+              ? roundKm(
+                  session.minKm +
+                    session.addonKm,
+                  roundingStep
+                )
+              : fixedPlannedKmById.get(
+                  session.id
+                ),
+        })
+      );
+
+    return {
+      status:
+        'over_budget',
+
+      targetWeeklyKm:
+        target,
+
+      requestedTargetWeeklyKm:
+        requestedTarget,
+
+      reservedKm,
+
+      overByKm:
+        Math.round(
+          Math.abs(
+            remainingKm
+          ) *
+            1000
+        ) /
+        1000,
+
+      remainingKm: 0,
+
+      allocatedTotalKm:
+        outputSessions.reduce(
+          (sum, session) =>
+            sum +
+            session.plannedKm,
+          0
+        ),
+
+      sessions:
+        outputSessions,
+    };
+  }
+
+  if (
+    flexibleSessions.length ===
+    0
+  ) {
+    const allocatedTotalKm =
+      fixedSessionKm;
+
+    return {
+      status:
+        Math.abs(
+          allocatedTotalKm -
+            target
+        ) <
+        1e-9
+          ? 'balanced'
+          : 'under_budget',
+
+      targetWeeklyKm:
+        target,
+
+      requestedTargetWeeklyKm:
+        requestedTarget,
+
+      reservedKm,
+
+      remainingKm:
+        Math.max(
+          0,
+          target -
+            allocatedTotalKm
+        ),
+
+      allocatedTotalKm,
+
+      sessions:
+        normalized.map(
+          session => ({
+            ...session,
+
+            plannedKm:
+              fixedPlannedKmById.get(
+                session.id
+              ),
           })
         ),
     };
@@ -400,16 +588,28 @@ export function allocateWeeklyKmBudget({
   const totalWeight =
     flexibleSessions.reduce(
       (sum, session) =>
-        sum + session.weight,
+        sum +
+        session.weight,
       0
     );
 
+  /*
+   * Add-on distance is part of the final
+   * session total before rounding.
+   *
+   * Example:
+   * Aerobic 13.4 km
+   * + Strides 0.6 km
+   * = displayed/planned 14 km.
+   */
   const rawFlexible =
     flexibleSessions.map(
       session => ({
         ...session,
-        rawBaseKm:
+
+        rawPlannedKm:
           session.minKm +
+          session.addonKm +
           remainingKm *
             (
               session.weight /
@@ -422,9 +622,10 @@ export function allocateWeeklyKmBudget({
     rawFlexible.map(
       session => ({
         ...session,
-        baseKm:
+
+        plannedKm:
           roundKm(
-            session.rawBaseKm,
+            session.rawPlannedKm,
             roundingStep
           ),
       })
@@ -432,40 +633,60 @@ export function allocateWeeklyKmBudget({
 
   let roundedTotal =
     fixedSessionKm +
-    flexibleAddonKm +
     roundedFlexible.reduce(
       (sum, session) =>
-        sum + session.baseKm,
+        sum +
+        session.plannedKm,
       0
     );
 
+  /*
+   * Individual rounding can leave the
+   * week ±1 or ±2 km away from target.
+   *
+   * Close that difference on the
+   * largest flexible session.
+   */
   const correction =
-    Math.round(
-      (target -
-        roundedTotal) *
-        1000
-    ) / 1000;
+    target -
+    roundedTotal;
 
   if (
-    Math.abs(correction) >
-      1e-9
+    Math.abs(
+      correction
+    ) >
+    1e-9
   ) {
     const adjustable =
-      [...roundedFlexible].sort(
-        (a, b) =>
-          b.baseKm - a.baseKm
-      )[0];
+      [...roundedFlexible]
+        .sort(
+          (a, b) =>
+            b.plannedKm -
+            a.plannedKm
+        )[0];
 
-    adjustable.baseKm =
+    const minimumPlannedKm =
+      roundKm(
+        adjustable.minKm +
+          adjustable.addonKm,
+        roundingStep
+      );
+
+    adjustable.plannedKm =
       Math.max(
-        adjustable.minKm,
-        Math.round(
-          (
-            adjustable.baseKm +
-            correction
-          ) *
-            1000
-        ) / 1000
+        minimumPlannedKm,
+
+        adjustable.plannedKm +
+          correction
+      );
+
+    roundedTotal =
+      fixedSessionKm +
+      roundedFlexible.reduce(
+        (sum, session) =>
+          sum +
+          session.plannedKm,
+        0
       );
   }
 
@@ -474,8 +695,7 @@ export function allocateWeeklyKmBudget({
       roundedFlexible.map(
         session => [
           session.id,
-          session.baseKm +
-            session.addonKm,
+          session.plannedKm,
         ]
       )
     );
@@ -484,67 +704,78 @@ export function allocateWeeklyKmBudget({
     normalized.map(
       session => ({
         ...session,
+
         plannedKm:
           session.flexible
             ? plannedById.get(
                 session.id
               )
-            : session.fixedKm +
-              session.addonKm,
+            : fixedPlannedKmById.get(
+                session.id
+              ),
       })
     );
 
   const allocatedTotalKm =
-    Math.round(
-      outputSessions.reduce(
-        (sum, session) =>
-          sum +
-          session.plannedKm,
-        0
-      ) *
-        1000
-    ) / 1000;
+    outputSessions.reduce(
+      (sum, session) =>
+        sum +
+        session.plannedKm,
+      0
+    );
 
   return {
     status:
       Math.abs(
         allocatedTotalKm -
           target
-      ) < 0.001
+      ) <
+      0.001
         ? 'balanced'
         : allocatedTotalKm >
             target
           ? 'over_budget'
           : 'under_budget',
-    targetWeeklyKm: target,
-    fixedSessionKm:
-      Math.round(
-        fixedSessionKm * 1000
-      ) / 1000,
+
+    targetWeeklyKm:
+      target,
+
+    requestedTargetWeeklyKm:
+      requestedTarget,
+
+    fixedSessionKm,
+
     flexibleAddonKm:
       Math.round(
-        flexibleAddonKm * 1000
-      ) / 1000,
+        flexibleAddonKm *
+          1000
+      ) /
+      1000,
+
     flexibleMinimumKm:
       Math.round(
-        flexibleMinimumKm * 1000
-      ) / 1000,
+        flexibleMinimumKm *
+          1000
+      ) /
+      1000,
+
     reservedKm:
       Math.round(
-        reservedKm * 1000
-      ) / 1000,
+        reservedKm *
+          1000
+      ) /
+      1000,
+
     allocatedTotalKm,
+
     remainingKm:
       Math.max(
         0,
-        Math.round(
-          (
-            target -
-            allocatedTotalKm
-          ) *
-            1000
-        ) / 1000
+        target -
+          allocatedTotalKm
       ),
-    sessions: outputSessions,
+
+    sessions:
+      outputSessions,
   };
 }
