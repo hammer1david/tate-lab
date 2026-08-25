@@ -382,7 +382,330 @@ assert.equal(
   makeup.weeks[0].status,
   'balanced'
 );
+const variationAerobicConfig = {
+  generationRule: {
+    prefer_distance_variation:
+      true,
 
+    avoid_same_distance_mode_streak:
+      true,
+  },
+
+  distanceProfiles: [
+    {
+      distance_mode: 'short',
+      multiplier_min: 0.75,
+      multiplier_default: 0.80,
+      multiplier_max: 0.85,
+      active: true,
+    },
+    {
+      distance_mode: 'normal',
+      multiplier_min: 0.90,
+      multiplier_default: 1.00,
+      multiplier_max: 1.10,
+      active: true,
+    },
+    {
+      distance_mode: 'longer',
+      multiplier_min: 1.15,
+      multiplier_default: 1.25,
+      multiplier_max: 1.35,
+      active: true,
+    },
+  ],
+
+  phaseRules: [
+    {
+      phase: 'loading',
+      active: true,
+
+      longer_max_sessions_per_week:
+        2,
+
+      pre_quality_pace_level:
+        'easy',
+
+      pre_quality_distance_mode:
+        'short',
+
+      post_quality_pace_level:
+        'easy',
+
+      post_quality_distance_mode:
+        'short',
+    },
+  ],
+};
+
+function variationAerobicWorkout(
+  id
+) {
+  return {
+    id,
+    dynamicType:
+      'aerobic',
+
+    dynamicConfig:
+      variationAerobicConfig,
+  };
+}
+
+const variationLongRun = {
+  id: 'LR-VARIATION',
+
+  dynamicType:
+    'long_run',
+
+  dynamicConfig: {
+    phaseRules: [
+      {
+        phase: 'loading',
+        active: true,
+
+        long_run_allowed:
+          true,
+
+        sessions_per_week:
+          1,
+
+        weekly_km_share_min:
+          0.18,
+
+        weekly_km_share_default:
+          0.205,
+
+        weekly_km_share_max:
+          0.23,
+
+        max_distance_km:
+          30,
+      },
+    ],
+  },
+};
+
+const variationSchedule = {
+  trainingDaysPerWeek: 5,
+
+  weeks: [
+    {
+      // Week number 2 intentionally:
+      // Long Run selection should use MAX.
+      week: 2,
+
+      trainingDays: 5,
+      scheduledTrainingDays: 5,
+
+      days: [
+        {
+          day: 'mon',
+
+          assignment: {
+            slot: 20,
+
+            primaryAnchor:
+              'Aerobic',
+
+            workout:
+              variationAerobicWorkout(
+                'A-SHORT'
+              ),
+          },
+
+          placementType:
+            'easy',
+        },
+
+        {
+          day: 'tue',
+
+          assignment: {
+            slot: 21,
+
+            primaryAnchor:
+              'Threshold',
+
+            workout: {
+              id: 'Q-VARIATION',
+              workKm: 8,
+              band: 2,
+            },
+          },
+
+          placementType:
+            'workout',
+        },
+
+        {
+          day: 'wed',
+
+          assignment: {
+            slot: 22,
+
+            primaryAnchor:
+              'Aerobic',
+
+            workout: {
+              id: 'REC-VARIATION',
+
+              dynamicType:
+                'recovery',
+            },
+          },
+
+          placementType:
+            'easy',
+        },
+
+        {
+          day: 'fri',
+
+          assignment: {
+            slot: 23,
+
+            primaryAnchor:
+              'Aerobic',
+
+            workout:
+              variationAerobicWorkout(
+                'A-NORMAL'
+              ),
+          },
+
+          placementType:
+            'easy',
+        },
+
+        {
+          day: 'sun',
+
+          assignment: {
+            slot: 24,
+
+            primaryAnchor:
+              'Aerobic',
+
+            workout:
+              variationLongRun,
+          },
+
+          placementType:
+            'long_run',
+        },
+      ],
+    },
+  ],
+};
+
+const variationResult =
+  applyWeeklyKmPlanToSchedule({
+    schedule:
+      variationSchedule,
+
+    phase:
+      'loading',
+
+    scores: {
+      Aerobic: 20,
+      Threshold: 60,
+    },
+
+    current10k:
+      '40:00',
+
+    startWeeklyKm:
+      100,
+
+    materializeWorkoutFn:
+      fakeMaterialize,
+  });
+
+assert.equal(
+  variationSchedule
+    .weeks[0]
+    .days[0]
+    .assignment
+    .aerobicDistanceMode,
+
+  'short'
+);
+
+assert.equal(
+  variationSchedule
+    .weeks[0]
+    .days[3]
+    .assignment
+    .aerobicDistanceMode,
+
+  'normal'
+);
+
+assert.notEqual(
+  variationSchedule
+    .weeks[0]
+    .days[0]
+    .plannedKm,
+
+  variationSchedule
+    .weeks[0]
+    .days[3]
+    .plannedKm
+);
+
+assert.equal(
+  variationSchedule
+    .weeks[0]
+    .days[4]
+    .assignment
+    .longRunShareMode,
+
+  'max'
+);
+
+assert.equal(
+  variationSchedule
+    .weeks[0]
+    .days[4]
+    .assignment
+    .longRunWeeklyShare,
+
+  0.23
+);
+
+assert.equal(
+  variationSchedule
+    .weeks[0]
+    .days[4]
+    .plannedKm,
+
+  24
+);
+
+assert.equal(
+  variationResult
+    .weeks[0]
+    .plannedKm,
+
+  105
+);
+
+assert.equal(
+  variationResult
+    .weeks[0]
+    .status,
+
+  'balanced'
+);
+
+assert.equal(
+  variationResult
+    .distanceSelection
+    .longRun[0]
+    .mode,
+
+  'max'
+);
 console.log(
   'TATE real weekly km integration tests passed'
 );
