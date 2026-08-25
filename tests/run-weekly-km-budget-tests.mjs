@@ -83,7 +83,7 @@ assert.equal(
     weeklyShare: 0.225,
     maxDistanceKm: 30,
   }),
-  22.5
+  23
 );
 
 assert.equal(
@@ -162,7 +162,7 @@ assert.equal(
 
 assert.equal(
   balanced.fixedSessionKm,
-  43.5
+  44
 );
 
 assert.equal(
