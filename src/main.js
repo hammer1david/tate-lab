@@ -29,6 +29,10 @@ import {
   missedSessionPolicy,
 } from './tate-engine/daily-feedback-simulator.js';
 
+import {
+  applyWeeklyKmPlanToSchedule,
+} from './tate-engine/weekly-plan-km.js';
+
 const LAB_VERSION = '0.6.2-detailed-weekly-workouts';
 const $ = id => document.getElementById(id);
 
@@ -460,9 +464,8 @@ function materializedAssignmentDetails(
     plan,
     scores,
     current10k,
-    weeklyKm,
     progressiveSlots,
-    trainingDays,
+    kmPlan,
   }
 ) {
   if (
@@ -487,18 +490,16 @@ function materializedAssignmentDetails(
     athlete
   );
 
-  const distanceKm = plannedDistanceKm(
-    assignment.workout,
-    {
-      weeklyKm,
-      trainingDays,
-      phase: plan.phase,
-    }
-  );
+  const plannedKm =
+    kmPlan?.plannedKmBySlot?.get(
+      assignment.slot
+    );
 
   const lines = [
-    ...(Number.isFinite(distanceKm)
-      ? [`${distanceKm} km planned distance`]
+    ...(Number.isFinite(plannedKm)
+      ? [
+          `${plannedKm} km planned session total`,
+        ]
       : []),
     ...formatMaterializedWorkout(workout),
   ];
@@ -928,7 +929,17 @@ function renderWeeklySchedule(
   const current = currentSimulationDay(schedule);
 
   const weekMarkup = schedule.weeks
-    .map(week => `
+    .map(week => {
+      const kmWeek =
+        displayContext
+          ?.kmPlan
+          ?.weeks
+          ?.find(
+            item =>
+              item.week === week.week
+          );
+
+      return `
       <article class="library-section">
         <div class="stimulus-heading">
           <h3>Week ${week.week}</h3>
@@ -938,6 +949,16 @@ function renderWeeklySchedule(
             selected training days used
             ${week.hasLongRun ? ' · Long Run planned' : ''}
             ${week.hasSpeed ? ' · Speed planned' : ''}
+            ${
+              kmWeek
+                ? ` · ${kmWeek.plannedKm}/${kmWeek.targetWeeklyKm} km planned`
+                : ''
+            }
+            ${
+              kmWeek?.status === 'incomplete'
+                ? ' · KM ESTIMATE INCOMPLETE'
+                : ''
+            }
           </span>
         </div>
 
@@ -1196,7 +1217,8 @@ function renderWeeklySchedule(
             : ''
         }
       </article>
-    `)
+      `;
+    })
     .join('');
 
   const gapMarkup = schedule.unscheduled.length
@@ -1247,6 +1269,8 @@ function renderPlan(
     progressiveSlots,
     trainingDays:
       schedule.trainingDaysPerWeek,
+    kmPlan:
+      simulationContext.kmPlan || null,
   };
 
   renderWeeklySchedule(
@@ -1445,9 +1469,13 @@ function renderPlan(
     phaseLabel,
     `${plan.slotCount} slots`,
     `${schedule.trainingDaysPerWeek} training days/week`,
-    Number.isFinite(weeklyKm)
-      ? `${weeklyKm} km/week`
-      : 'weekly km not set',
+    simulationContext.kmPlan
+      ? `km targets ${simulationContext.kmPlan.weeks
+          .map(item => item.targetWeeklyKm)
+          .join(' → ')}`
+      : Number.isFinite(weeklyKm)
+        ? `${weeklyKm} km start`
+        : 'weekly km not set',
     `${missing} database gap${missing === 1 ? '' : 's'}`,
     `${scheduleGaps} schedule gap${scheduleGaps === 1 ? '' : 's'}`,
     `${dailyFeedbackState.history.length} feedback day${dailyFeedbackState.history.length === 1 ? '' : 's'}`,
@@ -1485,6 +1513,7 @@ function buildSimulation() {
     $('slot-count').value
   );
   const phase = $('training-phase').value;
+  const scores = readScores();
 
   const longRunPhaseRule =
     longRunPhaseRuleFor(phase);
@@ -1510,7 +1539,7 @@ function buildSimulation() {
     event: '10K',
     phase,
     slotCount,
-    scores: readScores(),
+    scores,
     workouts: workoutLibrary,
     secondaryNeedConfig: {
       enabled: true,
@@ -1573,11 +1602,28 @@ function buildSimulation() {
     adaptation
   );
 
+  const weeklyKm = readWeeklyKm();
+
+  const kmPlan =
+    Number.isFinite(weeklyKm)
+      ? applyWeeklyKmPlanToSchedule({
+          schedule,
+          phase,
+          scores,
+          current10k:
+            $('current-10k').value,
+          startWeeklyKm:
+            weeklyKm,
+          progressiveSlots,
+        })
+      : null;
+
   lastSimulation = {
     plan,
     schedule,
     adaptation,
     progressiveSlots,
+    kmPlan,
   };
 
   renderPlan(
@@ -1586,6 +1632,7 @@ function buildSimulation() {
     {
       adaptation,
       progressiveSlots,
+      kmPlan,
     }
   );
 }
