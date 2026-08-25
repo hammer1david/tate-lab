@@ -2,6 +2,9 @@ import {
   materializeWorkout,
   performanceBandForScore,
 } from './database-library.js';
+import {
+  applyDistanceSelectionLayer,
+} from './distance-selection.js';
 
 import {
   buildWeeklyKmBlock,
