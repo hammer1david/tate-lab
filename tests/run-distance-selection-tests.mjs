@@ -75,6 +75,25 @@ function aerobic(slot) {
   };
 }
 
+function progressive(slot) {
+  return {
+    slot,
+    primaryAnchor: 'Aerobic',
+
+    workout: {
+      id: `P-${slot}`,
+      dynamicType: 'progressive',
+
+      dynamicConfig: {
+        generationRule,
+        distanceProfiles,
+
+        phaseRules:
+          aerobicPhaseRules,
+      },
+    },
+  };
+}
 function quality(slot) {
   return {
     slot,
