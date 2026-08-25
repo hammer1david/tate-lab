@@ -123,10 +123,14 @@ function profileMultiplier(
   );
 }
 
-function isAerobic(day) {
-  return (
+function isAerobicDistanceSession(day) {
+  const type =
     day?.assignment?.workout
-      ?.dynamicType === 'aerobic'
+      ?.dynamicType;
+
+  return (
+    type === 'aerobic' ||
+    type === 'progressive'
   );
 }
 
