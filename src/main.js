@@ -723,6 +723,7 @@ function renderPlan(
                   assignment.primaryAnchor
                 ] ?? 50,
               current10k,
+              phase: plan.phase,
             }
           );
 
