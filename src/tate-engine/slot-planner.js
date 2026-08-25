@@ -375,6 +375,7 @@ export function buildAutomaticSecondaryPlan({
   trainingDaysPerWeek = 7,
   estimatedWeeks = null,
   hasLongRunDay = true,
+  longRunAllowed = true,
 } = {}) {
   const trainingPhase =
     normalizeTrainingPhase(
@@ -452,7 +453,10 @@ export function buildAutomaticSecondaryPlan({
    * Aerobic anchor and therefore
    * remains inside the 70% Aerobic.
    */
-  if (hasLongRunDay) {
+  if (
+  longRunAllowed &&
+  hasLongRunDay
+) {
     for (
       let week = 1;
       week <= totalWeeks;
@@ -550,17 +554,17 @@ export function buildAutomaticSecondaryPlan({
         );
 
         longRunCount += 1;
-      } else {
-        gaps.push({
-          type:
-            'long_run_need_gap',
+} else if (longRunAllowed) {
+  gaps.push({
+    type:
+      'long_run_day_missing',
 
-          week,
+    week: null,
 
-          reason:
-            'No Aerobic Primary anchor is available to satisfy the weekly Long Run minimum while preserving the 70/20/10 allocation.',
-        });
-      }
+    reason:
+      'No Long Run Day is selected, so the weekly Long Run minimum cannot be scheduled.',
+  });
+}
     }
   } else {
     gaps.push({
