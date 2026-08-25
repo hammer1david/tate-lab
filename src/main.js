@@ -502,6 +502,140 @@ function flattenScheduleDays(schedule) {
       )
   );
 }
+function recoveryWorkoutFromLibrary() {
+  return (
+    workoutLibrary.find(
+      workout =>
+        workout.active !== false &&
+        workout.dynamicType ===
+          'recovery'
+    ) || null
+  );
+}
+
+function applyRecoveryOverrides(
+  schedule,
+  adaptation
+) {
+  const recoveryWorkout =
+    recoveryWorkoutFromLibrary();
+
+  if (!recoveryWorkout) {
+    return schedule;
+  }
+
+  for (
+    const item of
+      flattenScheduleDays(schedule)
+  ) {
+    if (
+      !adaptation.forceRecoveryKeys.has(
+        item.key
+      ) ||
+      !item.day.assignment ||
+      item.day.placementType !== 'easy'
+    ) {
+      continue;
+    }
+
+    item.day.assignment = {
+      ...item.day.assignment,
+      secondaryTarget: null,
+      selectedStimulus: 'Recovery',
+      selectionMode:
+        'feedback_override',
+      workout: recoveryWorkout,
+      reason:
+        adaptation.adaptationReasons[
+          item.key
+        ] ||
+        'TWETE Daily Feedback converted this Aerobic slot to Recovery.',
+    };
+
+    item.day.placementReason =
+      adaptation.adaptationReasons[
+        item.key
+      ] ||
+      'TWETE Daily Feedback converted this Aerobic slot to Recovery.';
+  }
+
+  return schedule;
+}
+
+function mergeCompletedDays(schedule) {
+  for (
+    const item of
+      flattenScheduleDays(schedule)
+  ) {
+    const completed =
+      dailyFeedbackState.completedDays.get(
+        item.key
+      );
+
+    if (!completed) {
+      continue;
+    }
+
+    Object.assign(
+      item.day,
+      completed.day,
+      {
+        simulated: true,
+        feedback:
+          completed.feedback,
+      }
+    );
+  }
+
+  for (const week of schedule.weeks) {
+    week.scheduledTrainingDays =
+      week.days.filter(
+        day => day.assignment
+      ).length;
+
+    week.hasLongRun =
+      week.days.some(
+        day =>
+          day.placementType ===
+          'long_run'
+      );
+
+    week.hasSpeed =
+      week.days.some(
+        day =>
+          day.placementType ===
+          'speed'
+      );
+  }
+
+  return schedule;
+}
+
+function progressiveSlotsFor(
+  schedule,
+  adaptation
+) {
+  const result =
+    new Set();
+
+  for (
+    const item of
+      flattenScheduleDays(schedule)
+  ) {
+    if (
+      adaptation.progressiveLongRunKeys.has(
+        item.key
+      ) &&
+      item.day.assignment?.slot
+    ) {
+      result.add(
+        item.day.assignment.slot
+      );
+    }
+  }
+
+  return result;
+}
 
 function currentSimulationDay(schedule) {
   return (
