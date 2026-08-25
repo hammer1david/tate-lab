@@ -244,25 +244,71 @@ export function schedulePlanIntoWeeks(
   assignments = [],
   weekRule = blankWeekRule(1)
 ) {
-  const normalizedRule = Array.isArray(weekRule)
-    ? normalizeWeekRule(weekRule[0] || {}, 1)
-    : normalizeWeekRule(weekRule, 1);
+  const providedRules =
+    Array.isArray(weekRule) &&
+    weekRule.length
+      ? weekRule.map(
+          (rule, index) =>
+            normalizeWeekRule(
+              rule,
+              index + 1
+            )
+        )
+      : null;
 
-  const trainingDaysPerWeek = trainingDaysInRule(
-    normalizedRule
+  const normalizedRule =
+    providedRules?.[0] ||
+    normalizeWeekRule(
+      weekRule,
+      1
+    );
+
+  const trainingDaysPerWeek =
+    providedRules
+      ? Math.max(
+          0,
+          ...providedRules.map(
+            rule =>
+              trainingDaysInRule(rule)
+          )
+        )
+      : trainingDaysInRule(
+          normalizedRule
+        );
+
+  const totalAvailableTrainingDays =
+    providedRules
+      ? providedRules.reduce(
+          (sum, rule) =>
+            sum +
+            trainingDaysInRule(rule),
+          0
+        )
+      : trainingDaysPerWeek;
+
+  const totalWeeks =
+    providedRules
+      ? providedRules.length
+      : trainingDaysPerWeek > 0
+        ? Math.max(
+            1,
+            Math.ceil(
+              assignments.length /
+              trainingDaysPerWeek
+            )
+          )
+        : 1;
+
+  const weekRules =
+    providedRules ||
+    repeatRuleForWeeks(
+      normalizedRule,
+      totalWeeks
+    );
+
+  const weeks = weekRules.map(
+    rule => createWeekState(rule)
   );
-
-  const totalWeeks = trainingDaysPerWeek > 0
-    ? Math.max(
-        1,
-        Math.ceil(assignments.length / trainingDaysPerWeek)
-      )
-    : 1;
-
-  const weeks = repeatRuleForWeeks(
-    normalizedRule,
-    totalWeeks
-  ).map(rule => createWeekState(rule));
 
   const typed = assignments.map((assignment, index) => ({
     assignment,
@@ -272,7 +318,11 @@ export function schedulePlanIntoWeeks(
 
   const unscheduled = [];
 
-  if (trainingDaysPerWeek === 0) {
+  if (
+  providedRules
+    ? totalAvailableTrainingDays === 0
+    : trainingDaysPerWeek === 0
+) {
     for (const item of typed) {
       pushUnscheduled(
         unscheduled,
