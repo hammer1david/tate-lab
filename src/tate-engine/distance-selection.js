@@ -15,6 +15,14 @@ export const LONG_RUN_SHARE_PATTERN = Object.freeze([
   'min',
 ]);
 
+export const FORCED_SHORT_DISTRIBUTION_PATTERN =
+  Object.freeze([
+    1.15,
+    0.85,
+    1.15,
+    1.00,
+  ]);
+
 function numberOrNull(value) {
   if (
     value === null ||
