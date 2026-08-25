@@ -454,22 +454,42 @@ function budgetSessionForDay({
     );
 
   if (flexibleType) {
-    return {
+  const selectedWeight =
+    flexibleType === 'aerobic'
+      ? finiteNumber(
+          assignment
+            .aerobicDistanceMultiplier
+        )
+      : null;
+
+  return {
+    id,
+    slot:
+      assignment.slot,
+    materialized,
+    exact: true,
+    issue: null,
+    session: {
       id,
-      slot:
-        assignment.slot,
-      materialized,
-      exact: true,
-      issue: null,
-      session: {
-        id,
-        type:
-          flexibleType,
-        minKm: 0,
-        addonKm,
-      },
-    };
-  }
+      type:
+        flexibleType,
+      minKm: 0,
+      addonKm,
+
+      ...(
+        Number.isFinite(
+          selectedWeight
+        ) &&
+        selectedWeight > 0
+          ? {
+              weight:
+                selectedWeight,
+            }
+          : {}
+      ),
+    },
+  };
+}
 
   const quality =
     qualitySessionBudget({
