@@ -477,13 +477,32 @@ function materializedAssignmentDetails(
   }
 
   const athlete = {
-    score:
-      scores[assignment.primaryAnchor] ?? 50,
-    current10k,
-    phase: plan.phase,
-    longRunProgressive:
-      progressiveSlots.has(assignment.slot),
-  };
+  score:
+    scores[assignment.primaryAnchor] ?? 50,
+
+  current10k,
+  phase: plan.phase,
+
+  longRunProgressive:
+    progressiveSlots.has(
+      assignment.slot
+    ),
+
+  aerobicDistanceMode:
+    assignment.aerobicDistanceMode,
+
+  aerobicPaceLevel:
+    assignment.aerobicPaceLevel,
+
+  aerobicDistanceMultiplier:
+    assignment.aerobicDistanceMultiplier,
+
+  longRunShareMode:
+    assignment.longRunShareMode,
+
+  longRunWeeklyShare:
+    assignment.longRunWeeklyShare,
+};
 
   const workout = materializeWorkout(
     assignment.workout,
