@@ -474,6 +474,45 @@ function sessionTitle(assignment) {
   return selected || 'Session';
 }
 
+function resetDailyFeedbackSimulation() {
+  dailyFeedbackState = {
+    cursor: 0,
+    history: [],
+    completedSlots: new Set(),
+    completedDays: new Map(),
+    missedMakeupSlots: new Set(),
+  };
+}
+
+function flattenScheduleDays(schedule) {
+  return schedule.weeks.flatMap(
+    week =>
+      week.days.map(
+        (day, dayIndex) => ({
+          week: week.week,
+          day,
+          key: calendarDayKey(
+            week.week,
+            day.day
+          ),
+          calendarIndex:
+            (week.week - 1) * 7 +
+            dayIndex,
+        })
+      )
+  );
+}
+
+function currentSimulationDay(schedule) {
+  return (
+    flattenScheduleDays(schedule).find(
+      item =>
+        item.calendarIndex ===
+        dailyFeedbackState.cursor
+    ) || null
+  );
+}
+
 function renderWeeklySchedule(schedule) {
   const target = $('weekly-plan');
 
