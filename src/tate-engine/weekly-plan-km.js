@@ -273,10 +273,17 @@ function longRunSessionBudget({
       phase
     );
 
-  const share =
-    finiteNumber(
-      rule?.weekly_km_share_default
-    );
+ const selectedShare =
+  finiteNumber(
+    assignment.longRunWeeklyShare
+  );
+
+const share =
+  Number.isFinite(selectedShare)
+    ? selectedShare
+    : finiteNumber(
+        rule?.weekly_km_share_default
+      );
 
   if (
     !Number.isFinite(share) ||
