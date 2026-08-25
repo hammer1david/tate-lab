@@ -165,6 +165,15 @@ assert.equal(
   44
 );
 
+assert.ok(
+  balanced.sessions.every(
+    session =>
+      Number.isInteger(
+        session.plannedKm
+      )
+  )
+);
+
 assert.equal(
   balanced.flexibleAddonKm,
   0.6
