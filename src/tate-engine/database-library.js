@@ -679,23 +679,62 @@ function materializeDynamicWorkout(workout, athlete, common) {
   const lines = [];
 
   if (workout.dynamicType === 'aerobic') {
-    const paceProfile =
-      findPaceProfile(config.paceProfiles || [], 'normal') ||
-      config.paceProfiles?.[0];
-    const distanceProfile =
-      (config.distanceProfiles || []).find(item => item.distance_mode === 'normal') ||
-      config.distanceProfiles?.[0];
+  const selectedPaceLevel =
+    athlete.aerobicPaceLevel ||
+    'normal';
 
-    lines.push(
-      `Dynamic Aerobic · ${cleanLabel(paceProfile?.pace_level || 'normal')} · ${formatPaceRange(current10kSeconds, paceProfile)}`
+  const selectedDistanceMode =
+    athlete.aerobicDistanceMode ||
+    'normal';
+
+  const paceProfile =
+    findPaceProfile(
+      config.paceProfiles || [],
+      selectedPaceLevel
+    ) ||
+    findPaceProfile(
+      config.paceProfiles || [],
+      'normal'
+    ) ||
+    config.paceProfiles?.[0];
+
+  const distanceProfile =
+    (config.distanceProfiles || []).find(
+      item =>
+        item.distance_mode ===
+        selectedDistanceMode
+    ) ||
+    (config.distanceProfiles || []).find(
+      item =>
+        item.distance_mode ===
+        'normal'
+    ) ||
+    config.distanceProfiles?.[0];
+
+  const selectedMultiplier =
+    number(
+      athlete.aerobicDistanceMultiplier
     );
 
-    if (distanceProfile) {
-      lines.push(
-        `Distance mode ${cleanLabel(distanceProfile.distance_mode)} · ${number(distanceProfile.multiplier_min)?.toFixed(2)}–${number(distanceProfile.multiplier_max)?.toFixed(2)}× average aerobic slot (${number(distanceProfile.multiplier_default)?.toFixed(2)}× default)`
-      );
-    }
+  lines.push(
+    `${cleanLabel(selectedDistanceMode)} Aerobic · ` +
+    `${cleanLabel(paceProfile?.pace_level || selectedPaceLevel)} · ` +
+    `${formatPaceRange(current10kSeconds, paceProfile)}`
+  );
+
+  if (distanceProfile) {
+    lines.push(
+      `Distance mode ${cleanLabel(distanceProfile.distance_mode)} · ` +
+      `${number(distanceProfile.multiplier_min)?.toFixed(2)}–` +
+      `${number(distanceProfile.multiplier_max)?.toFixed(2)}× average aerobic slot` +
+      (
+        Number.isFinite(selectedMultiplier)
+          ? ` · selected ${selectedMultiplier.toFixed(2)}×`
+          : ` · ${number(distanceProfile.multiplier_default)?.toFixed(2)}× default`
+      )
+    );
   }
+}
 
   if (workout.dynamicType === 'progressive') {
     const start =
