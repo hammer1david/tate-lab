@@ -441,119 +441,130 @@ export function buildAutomaticSecondaryPlan({
         ) === 'VO2max'
     );
 
+
   let longRunCount = 0;
 
-  /*
-   * LONG RUN
-   *
-   * Minimum:
-   * 1 per simulated week.
-   *
-   * Long Run uses an existing
-   * Aerobic anchor and therefore
-   * remains inside the 70% Aerobic.
-   */
-  if (
+/*
+ * LONG RUN
+ *
+ * Minimum:
+ * 1 per simulated week.
+ *
+ * Long Run uses an existing
+ * Aerobic anchor and therefore
+ * remains inside the 70% Aerobic.
+ */
+if (
   longRunAllowed &&
   hasLongRunDay
 ) {
-    for (
-      let week = 1;
-      week <= totalWeeks;
-      week += 1
-    ) {
-      const startIndex =
-        Math.floor(
-          (
-            (week - 1) *
-            slots.length
-          ) /
-          totalWeeks
-        );
-
-      const endIndex =
-        Math.ceil(
-          (
-            week *
-            slots.length
-          ) /
-          totalWeeks
-        );
-
-      const inWeek =
-        aerobicSlots.filter(
-          slot => {
-            const index =
-              slot.slot - 1;
-
-            return (
-              index >=
-                startIndex &&
-              index <
-                endIndex &&
-              !blockedAerobic.has(
-                slot.slot
-              )
-            );
-          }
-        );
-
-      const weekCenter =
-        startIndex +
+  for (
+    let week = 1;
+    week <= totalWeeks;
+    week += 1
+  ) {
+    const startIndex =
+      Math.floor(
         (
-          endIndex -
-          startIndex -
-          1
+          (week - 1) *
+          slots.length
         ) /
-          2;
+        totalWeeks
+      );
 
-      const candidate =
+    const endIndex =
+      Math.ceil(
         (
-          inWeek.length
-            ? inWeek
-            : aerobicSlots.filter(
-                slot =>
-                  !blockedAerobic.has(
-                    slot.slot
-                  )
-              )
-        )
-          .sort(
-            (a, b) =>
+          week *
+          slots.length
+        ) /
+        totalWeeks
+      );
+
+    const inWeek =
+      aerobicSlots.filter(
+        slot => {
+          const index =
+            slot.slot - 1;
+
+          return (
+            index >= startIndex &&
+            index < endIndex &&
+            !blockedAerobic.has(
+              slot.slot
+            )
+          );
+        }
+      );
+
+    const weekCenter =
+      startIndex +
+      (
+        endIndex -
+        startIndex -
+        1
+      ) /
+        2;
+
+    const candidate =
+      (
+        inWeek.length
+          ? inWeek
+          : aerobicSlots.filter(
+              slot =>
+                !blockedAerobic.has(
+                  slot.slot
+                )
+            )
+      )
+        .sort(
+          (a, b) =>
+            Math.abs(
+              (
+                a.slot - 1
+              ) -
+              weekCenter
+            ) -
               Math.abs(
                 (
-                  a.slot - 1
+                  b.slot - 1
                 ) -
                 weekCenter
-              ) -
-                Math.abs(
-                  (
-                    b.slot - 1
-                  ) -
-                  weekCenter
-                ) ||
-              a.slot -
-                b.slot
-          )[0];
+              ) ||
+            a.slot -
+              b.slot
+        )[0];
 
-      if (candidate) {
-        secondaryPlan[
-          candidate.slot
-        ] = {
-          target:
-            'long_run',
+    if (candidate) {
+      secondaryPlan[
+        candidate.slot
+      ] = {
+        target:
+          'long_run',
 
-          week,
+        week,
 
-          source:
-            'weekly_minimum',
-        };
+        source:
+          'weekly_minimum',
+      };
 
-        blockedAerobic.add(
-          candidate.slot
-        );
+      blockedAerobic.add(
+        candidate.slot
+      );
 
-        longRunCount += 1;
+      longRunCount += 1;
+    } else {
+      gaps.push({
+        type:
+          'long_run_need_gap',
+
+        week,
+
+        reason:
+          'No Aerobic Primary anchor is available to satisfy the weekly Long Run minimum while preserving the 70/20/10 allocation.',
+      });
+    }
+  }
 } else if (longRunAllowed) {
   gaps.push({
     type:
@@ -565,18 +576,6 @@ export function buildAutomaticSecondaryPlan({
       'No Long Run Day is selected, so the weekly Long Run minimum cannot be scheduled.',
   });
 }
-    }
-  } else {
-    gaps.push({
-      type:
-        'long_run_day_missing',
-
-      week: null,
-
-      reason:
-        'No Long Run Day is selected, so the weekly Long Run minimum cannot be scheduled.',
-    });
-  }
 
   /*
    * OTHER AEROBIC SECONDARIES
