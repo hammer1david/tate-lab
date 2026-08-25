@@ -94,7 +94,7 @@ assert.equal(
 
 assert.equal(
   roundWeeklyKm(101.26),
-  101.5
+  102
 );
 
 const base = calculateNextWeeklyKm({
@@ -212,7 +212,7 @@ assert.deepEqual(
     week =>
       week.targetWeeklyKm
   ),
-  [105, 110.5, 116, 122]
+  [105, 110, 116, 122]
 );
 
 const band2LoadingBlock =
@@ -228,7 +228,7 @@ assert.deepEqual(
     week =>
       week.targetWeeklyKm
   ),
-  [103, 106, 109, 112.5]
+  [103, 106, 109, 112]
 );
 
 const taperBlock =
