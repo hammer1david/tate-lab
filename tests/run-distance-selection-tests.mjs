@@ -395,6 +395,116 @@ assert.deepEqual(
   ]
 );
 
+
+const forcedShortSchedule = {
+  weeks: [
+    {
+      week: 1,
+
+      days: [
+        {
+          day: 'mon',
+          assignment: aerobic(101),
+          placementType: 'easy',
+        },
+        {
+          day: 'tue',
+          assignment: quality(102),
+          placementType: 'workout',
+        },
+        {
+          day: 'wed',
+          assignment: aerobic(103),
+          placementType: 'easy',
+        },
+        {
+          day: 'thu',
+          assignment: progressive(104),
+          placementType: 'easy',
+        },
+        {
+          day: 'fri',
+          assignment: quality(105),
+          placementType: 'workout',
+        },
+        {
+          day: 'sat',
+          assignment: aerobic(106),
+          placementType: 'easy',
+        },
+        {
+          day: 'sun',
+          assignment: longRun(107),
+          placementType: 'long_run',
+        },
+      ],
+    },
+  ],
+};
+
+const forcedShort =
+  applyDistanceSelectionLayer({
+    schedule:
+      forcedShortSchedule,
+    phase: 'loading',
+  });
+
+assert.deepEqual(
+  forcedShort.aerobic.map(
+    item =>
+      item.mode
+  ),
+  [
+    'short',
+    'short',
+    'short',
+    'short',
+  ]
+);
+
+assert.deepEqual(
+  forcedShort.aerobic.map(
+    item =>
+      item.distributionFactor
+  ),
+  [
+    1.15,
+    0.85,
+    1.15,
+    1.00,
+  ]
+);
+
+assert.equal(
+  forcedShortSchedule
+    .weeks[0]
+    .days[3]
+    .assignment
+    .workout
+    .dynamicType,
+  'progressive'
+);
+
+assert.equal(
+  forcedShortSchedule
+    .weeks[0]
+    .days[3]
+    .assignment
+    .aerobicDistanceMode,
+  'short'
+);
+
+const forcedWeights =
+  forcedShort.aerobic.map(
+    item =>
+      item.budgetWeight
+  );
+
+assert.ok(
+  Math.max(...forcedWeights) /
+    Math.min(...forcedWeights) >
+    1.30
+);
 const taperSchedule = {
   weeks: [
     {
