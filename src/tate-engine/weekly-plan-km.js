@@ -318,6 +318,8 @@ const share =
         )
           ? maxDistanceKm
           : Infinity,
+      
+      roundingStep: 1,
     });
 
   return {
@@ -640,7 +642,8 @@ export function applyWeeklyKmPlanToSchedule({
       completionShare < 1
         ? roundKm(
             fullWeekTargetKm *
-              completionShare
+              completionShare,
+          1
           )
         : fullWeekTargetKm;
 
@@ -690,6 +693,8 @@ export function applyWeeklyKmPlanToSchedule({
             item =>
               item.session
           ),
+
+        roundingStep: 1,
       });
 
     const budgetById =
