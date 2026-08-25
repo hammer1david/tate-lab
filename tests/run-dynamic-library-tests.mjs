@@ -15,8 +15,31 @@ const config = {
     { event, active: true, pace_level: 'moderate', pace_factor_min: 0.6923, pace_factor_default: 0.72, pace_factor_max: 0.75 },
   ],
   tate_aerobic_distance_profiles: [
-    { event, active: true, distance_mode: 'normal', multiplier_min: 0.9, multiplier_default: 1, multiplier_max: 1.1 },
-  ],
+  {
+    event,
+    active: true,
+    distance_mode: 'short',
+    multiplier_min: 0.75,
+    multiplier_default: 0.80,
+    multiplier_max: 0.85,
+  },
+  {
+    event,
+    active: true,
+    distance_mode: 'normal',
+    multiplier_min: 0.90,
+    multiplier_default: 1.00,
+    multiplier_max: 1.10,
+  },
+  {
+    event,
+    active: true,
+    distance_mode: 'longer',
+    multiplier_min: 1.15,
+    multiplier_default: 1.25,
+    multiplier_max: 1.35,
+  },
+],
   tate_aerobic_phase_rules: [{ event, active: true, phase: 'base' }],
   tate_long_run_profiles: [
     { event, active: true, long_run_type: 'normal', start_pace_level: 'normal', finish_pace_level: 'normal' },
@@ -64,6 +87,45 @@ assert.equal(byStimulus.Recovery.length, 1);
 assert.equal(byStimulus.Strides.length, 3);
 assert.equal(byStimulus.Sprint.length, 2);
 assert.equal(byStimulus['Hill Work'].length, 1);
+
+const selectedAerobic =
+  materializeWorkout(
+    byStimulus.Aerobic[0],
+    {
+      score: 90,
+      current10k: '30:00',
+      phase: 'loading',
+
+      aerobicDistanceMode:
+        'short',
+
+      aerobicPaceLevel:
+        'easy',
+
+      aerobicDistanceMultiplier:
+        0.80,
+    }
+  );
+
+const selectedAerobicLines =
+  formatMaterializedWorkout(
+    selectedAerobic
+  );
+
+assert.match(
+  selectedAerobicLines[0],
+  /Short Aerobic · Easy/
+);
+
+assert.match(
+  selectedAerobicLines[1],
+  /Distance mode Short/
+);
+
+assert.match(
+  selectedAerobicLines[1],
+  /selected 0\.80×/
+);
 
 const hillwork = materializeWorkout(byStimulus['Hill Work'][0], {
   score: 90,
