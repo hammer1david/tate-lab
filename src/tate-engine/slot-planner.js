@@ -1511,13 +1511,7 @@ export function assignWorkoutsToSlots(
           'primary',
 
         selectedStimulus:
-          requestedSecondary
-            ? normalizeStimulus(
-                SECONDARY_OVERRIDE_STIMULI[
-                  requestedSecondary
-                ]
-              )
-            : primaryAnchor,
+  primaryAnchor,
 
         reason:
           requestedSecondary
