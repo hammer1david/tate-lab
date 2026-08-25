@@ -73,7 +73,7 @@ function positiveNumber(value, name) {
   return parsed;
 }
 
-export function roundWeeklyKm(value, step = 0.5) {
+export function roundWeeklyKm(value, step = 1) {
   const km = positiveNumber(value, 'weekly km');
   const roundingStep = positiveNumber(
     step,
@@ -123,7 +123,7 @@ export function calculateNextWeeklyKm({
   phase = 'base',
   performanceBand = 2,
   peakWeeklyKm = previousWeeklyKm,
-  roundingStep = 0.5,
+  roundingStep = 1,
 } = {}) {
   const previous = positiveNumber(
     previousWeeklyKm,
@@ -238,7 +238,7 @@ export function buildWeeklyKmBlock({
   performanceBand = 2,
   weeks = 1,
   peakWeeklyKm = startWeeklyKm,
-  roundingStep = 0.5,
+  roundingStep = 1,
 } = {}) {
   let previous = positiveNumber(
     startWeeklyKm,
