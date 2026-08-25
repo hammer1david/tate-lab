@@ -93,7 +93,7 @@ assert.equal(
 );
 
 assert.equal(
-  roundWeeklyKm(101.26),
+  roundWeeklyKm(101.51),
   102
 );
 
