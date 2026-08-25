@@ -893,8 +893,7 @@ function buildSimulation() {
 
   const plan = buildGoalPlan({
     event: '10K',
-    phase:
-      $('training-phase').value,
+phase,
     slotCount,
     scores: readScores(),
     workouts: workoutLibrary,
@@ -905,7 +904,8 @@ function buildSimulation() {
       estimatedWeeks,
 
       weeklyLongRun:
-        hasLongRunDay(),
+        hasLongRunDay() &&
+        longRunAllowed,
     },
   });
 
