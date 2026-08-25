@@ -646,14 +646,50 @@ function materializeDynamicWorkout(workout, athlete, common) {
   }
 
   if (workout.dynamicType === 'long_run') {
-    const profile =
-      (config.profiles || []).find(item => item.long_run_type === 'normal') ||
-      config.profiles?.[0];
-    const phaseRule =
-      (config.phaseRules || []).find(item => item.phase === phase) ||
-      (config.phaseRules || []).find(item => item.phase === 'base') ||
-      config.phaseRules?.[0];
-    const startProfile = findPaceProfile(
+  const phaseRule =
+    (config.phaseRules || []).find(
+      item => item.phase === phase
+    ) ||
+    (config.phaseRules || []).find(
+      item => item.phase === 'base'
+    ) ||
+    config.phaseRules?.[0];
+
+  const defaultLongRunType =
+    phaseRule?.default_long_run_type ||
+    'normal';
+
+  const progressiveRequested =
+    athlete.longRunProgressive === true;
+
+  const progressiveAllowed =
+    phaseRule?.progressive_allowed === true;
+
+  const progressivePolicy =
+    phaseRule?.progressive_policy ||
+    'off';
+
+  const longRunType =
+    progressiveRequested &&
+    progressiveAllowed &&
+    progressivePolicy !== 'off'
+      ? 'progressive'
+      : defaultLongRunType;
+
+  const profile =
+    (config.profiles || []).find(
+      item =>
+        item.long_run_type ===
+        longRunType
+    ) ||
+    (config.profiles || []).find(
+      item =>
+        item.long_run_type ===
+        'normal'
+    ) ||
+    config.profiles?.[0];
+
+  const startProfile = findPaceProfile(
       config.paceProfiles || [],
       profile?.start_pace_level
     );
