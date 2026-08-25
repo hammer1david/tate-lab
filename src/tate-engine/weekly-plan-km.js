@@ -455,12 +455,21 @@ function budgetSessionForDay({
 
   if (flexibleType) {
   const selectedWeight =
-    flexibleType === 'aerobic'
-      ? finiteNumber(
+  (
+    flexibleType === 'aerobic' ||
+    flexibleType === 'progressive'
+  )
+    ? (
+        finiteNumber(
+          assignment
+            .distanceBudgetWeight
+        ) ??
+        finiteNumber(
           assignment
             .aerobicDistanceMultiplier
         )
-      : null;
+      )
+    : null;
 
   return {
     id,
