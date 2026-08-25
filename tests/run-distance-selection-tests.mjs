@@ -328,16 +328,16 @@ assert.equal(
   'short'
 );
 
-assert.notEqual(
+assert.ok(
   schedule.weeks[0]
     .days[0]
     .assignment
-    .aerobicDistanceMultiplier,
-
+    .distanceBudgetWeight
+  >
   schedule.weeks[0]
     .days[2]
     .assignment
-    .aerobicDistanceMultiplier
+    .distanceBudgetWeight
 );
 
 const week2Modes =
