@@ -1591,9 +1591,14 @@ export function buildGoalPlan({
               .estimatedWeeks,
 
           hasLongRunDay:
-            secondaryNeedConfig
-              .weeklyLongRun !==
-            false,
+  secondaryNeedConfig
+    .hasLongRunDay !==
+  false,
+
+longRunAllowed:
+  secondaryNeedConfig
+    .longRunAllowed !==
+  false,
         }
       : secondaryContext
         ? {
@@ -1631,6 +1636,10 @@ export function buildGoalPlan({
           hasLongRunDay:
             automaticSecondaryInput
               .hasLongRunDay,
+
+        longRunAllowed:
+  automaticSecondaryInput
+    .longRunAllowed,
         })
       : {
           secondaryPlan: {},
