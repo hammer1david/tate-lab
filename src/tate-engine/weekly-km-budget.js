@@ -279,118 +279,8 @@ function normalizeSession(
  * `fixedKm` supplied for a Quality session must therefore
  * already be the result of qualitySessionTotalKm().
  */
-export function allocateWeeklyKmBudget({
-  targetWeeklyKm,
-  sessions = [],
-  roundingStep = 0.5,
-} = {}) {
-  const target =
-    positiveNumber(
-      targetWeeklyKm,
-      'targetWeeklyKm'
-    );
 
-  const normalized =
-    sessions.map(
-      normalizeSession
-    );
-
-  const fixedSessions =
-    normalized.filter(
-      session =>
-        !session.flexible
-    );
-
-  const flexibleSessions =
-    normalized.filter(
-      session =>
-        session.flexible
-    );
-
-  const fixedSessionKm =
-    fixedSessions.reduce(
-      (sum, session) =>
-        sum +
-        session.fixedKm +
-        session.addonKm,
-      0
-    );
-
-  const flexibleAddonKm =
-    flexibleSessions.reduce(
-      (sum, session) =>
-        sum + session.addonKm,
-      0
-    );
-
-  const flexibleMinimumKm =
-    flexibleSessions.reduce(
-      (sum, session) =>
-        sum + session.minKm,
-      0
-    );
-
-  const reservedKm =
-    fixedSessionKm +
-    flexibleAddonKm +
-    flexibleMinimumKm;
-
-  const remainingKm =
-    target - reservedKm;
-
-  if (remainingKm < -1e-9) {
-    return {
-      status: 'over_budget',
-      targetWeeklyKm: target,
-      reservedKm,
-      overByKm:
-        Math.round(
-          Math.abs(remainingKm) *
-            1000
-        ) / 1000,
-      remainingKm: 0,
-      sessions: normalized.map(
-        session => ({
-          ...session,
-          plannedKm:
-            session.flexible
-              ? session.minKm +
-                session.addonKm
-              : session.fixedKm +
-                session.addonKm,
-        })
-      ),
-    };
-  }
-
-  if (
-    flexibleSessions.length === 0
-  ) {
-    const allocatedTotalKm =
-      fixedSessionKm;
-
-    return {
-      status:
-        Math.abs(
-          allocatedTotalKm - target
-        ) < 1e-9
-          ? 'balanced'
-          : 'under_budget',
-      targetWeeklyKm: target,
-      reservedKm,
-      remainingKm:
-        Math.max(
-          0,
-          target -
-            allocatedTotalKm
-        ),
-      allocatedTotalKm,
-      sessions:
-        normalized.map(
-          session => ({
-            ...session,
-            plannedKm:
-export function allocateWeeklyKmBudget({
+  export function allocateWeeklyKmBudget({
   targetWeeklyKm,
   sessions = [],
   roundingStep = 1,
@@ -424,19 +314,11 @@ export function allocateWeeklyKmBudget({
         session.flexible
     );
 
-  /*
-   * Fixed sessions keep their exact workout
-   * structure internally.
-   *
-   * Only the weekly-km budget / displayed
-   * session total is rounded.
-   */
   const fixedPlannedKmById =
     new Map(
       fixedSessions.map(
         session => [
           session.id,
-
           roundKm(
             session.fixedKm +
               session.addonKm,
@@ -501,6 +383,14 @@ export function allocateWeeklyKmBudget({
         })
       );
 
+    const allocatedTotalKm =
+      outputSessions.reduce(
+        (sum, session) =>
+          sum +
+          session.plannedKm,
+        0
+      );
+
     return {
       status:
         'over_budget',
@@ -511,6 +401,9 @@ export function allocateWeeklyKmBudget({
       requestedTargetWeeklyKm:
         requestedTarget,
 
+      fixedSessionKm,
+      flexibleAddonKm,
+      flexibleMinimumKm,
       reservedKm,
 
       overByKm:
@@ -523,14 +416,7 @@ export function allocateWeeklyKmBudget({
         1000,
 
       remainingKm: 0,
-
-      allocatedTotalKm:
-        outputSessions.reduce(
-          (sum, session) =>
-            sum +
-            session.plannedKm,
-          0
-        ),
+      allocatedTotalKm,
 
       sessions:
         outputSessions,
@@ -560,6 +446,9 @@ export function allocateWeeklyKmBudget({
       requestedTargetWeeklyKm:
         requestedTarget,
 
+      fixedSessionKm,
+      flexibleAddonKm,
+      flexibleMinimumKm,
       reservedKm,
 
       remainingKm:
@@ -593,42 +482,29 @@ export function allocateWeeklyKmBudget({
       0
     );
 
-  /*
-   * Add-on distance is part of the final
-   * session total before rounding.
-   *
-   * Example:
-   * Aerobic 13.4 km
-   * + Strides 0.6 km
-   * = displayed/planned 14 km.
-   */
-  const rawFlexible =
+  const roundedFlexible =
     flexibleSessions.map(
-      session => ({
-        ...session,
-
-        rawPlannedKm:
+      session => {
+        const rawPlannedKm =
           session.minKm +
           session.addonKm +
           remainingKm *
             (
               session.weight /
               totalWeight
+            );
+
+        return {
+          ...session,
+          rawPlannedKm,
+
+          plannedKm:
+            roundKm(
+              rawPlannedKm,
+              roundingStep
             ),
-      })
-    );
-
-  const roundedFlexible =
-    rawFlexible.map(
-      session => ({
-        ...session,
-
-        plannedKm:
-          roundKm(
-            session.rawPlannedKm,
-            roundingStep
-          ),
-      })
+        };
+      }
     );
 
   let roundedTotal =
@@ -640,13 +516,6 @@ export function allocateWeeklyKmBudget({
       0
     );
 
-  /*
-   * Individual rounding can leave the
-   * week ±1 or ±2 km away from target.
-   *
-   * Close that difference on the
-   * largest flexible session.
-   */
   const correction =
     target -
     roundedTotal;
@@ -678,15 +547,6 @@ export function allocateWeeklyKmBudget({
 
         adjustable.plannedKm +
           correction
-      );
-
-    roundedTotal =
-      fixedSessionKm +
-      roundedFlexible.reduce(
-        (sum, session) =>
-          sum +
-          session.plannedKm,
-        0
       );
   }
 
@@ -778,4 +638,4 @@ export function allocateWeeklyKmBudget({
     sessions:
       outputSessions,
   };
-}
+  }
