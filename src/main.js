@@ -20,6 +20,15 @@ import {
   schedulePlanIntoWeeks,
 } from './tate-engine/week-scheduler.js';
 
+import {
+  TWETE_DAILY_FEEDBACK_LABELS,
+  TWETE_DAILY_FEEDBACK_OPTIONS,
+  buildFeedbackAdaptation,
+  calendarDayKey,
+  validateTweteDailyFeedback,
+  missedSessionPolicy,
+} from './tate-engine/daily-feedback-simulator.js';
+
 const LAB_VERSION = '0.5.0-secondary-need-machine';
 const $ = id => document.getElementById(id);
 
