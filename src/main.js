@@ -1105,14 +1105,18 @@ phase,
     workouts: workoutLibrary,
 
     secondaryNeedConfig: {
-      enabled: true,
+  enabled: true,
 
-      estimatedWeeks,
+  trainingDaysPerWeek:
+    trainingDays,
 
-      weeklyLongRun:
-        hasLongRunDay() &&
-        longRunAllowed,
-    },
+  estimatedWeeks,
+
+  hasLongRunDay:
+    hasLongRunDay(),
+
+  longRunAllowed,
+},
   });
 
   const schedule =
