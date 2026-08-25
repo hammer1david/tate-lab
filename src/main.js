@@ -1119,16 +1119,91 @@ phase,
 },
   });
 
-  const schedule =
-    schedulePlanIntoWeeks(
-      plan.assignments,
-      currentWeekRule()
+  const baseSchedule =
+  schedulePlanIntoWeeks(
+    plan.assignments,
+    currentWeekRule()
+  );
+
+const adaptation =
+  buildFeedbackAdaptation({
+    baseWeekRule:
+      currentWeekRule(),
+
+    totalWeeks:
+      baseSchedule.weeks.length,
+
+    completedThroughIndex:
+      dailyFeedbackState.cursor - 1,
+
+    feedbackHistory:
+      dailyFeedbackState.history,
+
+    phase,
+  });
+
+const remainingAssignments =
+  plan.assignments
+    .filter(
+      assignment =>
+        !dailyFeedbackState
+          .completedSlots
+          .has(assignment.slot)
+    )
+    .map(
+      assignment =>
+        dailyFeedbackState
+          .missedMakeupSlots
+          .has(assignment.slot)
+          ? {
+              ...assignment,
+
+              feedbackMakeup: true,
+
+              feedbackMakeupReason:
+                'Previously missed Quality/Speed session. Make it up on the next eligible Workout Day before later quality sessions.',
+            }
+          : assignment
     );
 
-  renderPlan(
-    plan,
+let schedule =
+  schedulePlanIntoWeeks(
+    remainingAssignments,
+    adaptation.weekRules
+  );
+
+schedule =
+  applyRecoveryOverrides(
+    schedule,
+    adaptation
+  );
+
+schedule =
+  mergeCompletedDays(
     schedule
   );
+
+const progressiveSlots =
+  progressiveSlotsFor(
+    schedule,
+    adaptation
+  );
+
+lastSimulation = {
+  plan,
+  schedule,
+  adaptation,
+  progressiveSlots,
+};
+
+renderPlan(
+  plan,
+  schedule,
+  {
+    adaptation,
+    progressiveSlots,
+  }
+);
 }
 
 async function loadDatabase() {
