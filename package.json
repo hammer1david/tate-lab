@@ -1,0 +1,15 @@
+{
+  "name": "tate-lab",
+  "version": "0.6.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node ./tests/run-slot-planner-tests.mjs && node ./tests/run-strides-addon-tests.mjs && node ./tests/run-dynamic-library-tests.mjs && node ./tests/run-weekly-km-calculator-tests.mjs && node ./tests/run-weekly-km-budget-tests.mjs && node ./tests/run-daily-feedback-tests.mjs && node ./tests/run-feedback-integration-tests.mjs",
+    "test:slots": "node ./tests/run-slot-planner-tests.mjs",
+    "test:strides": "node ./tests/run-strides-addon-tests.mjs",
+    "test:dynamic": "node ./tests/run-dynamic-library-tests.mjs",
+    "test:km": "node ./tests/run-weekly-km-calculator-tests.mjs && node ./tests/run-weekly-km-budget-tests.mjs",
+    "test:feedback": "node ./tests/run-daily-feedback-tests.mjs && node ./tests/run-feedback-integration-tests.mjs",
+    "serve": "python3 -m http.server 8080"
+  }
+}
