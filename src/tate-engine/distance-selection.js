@@ -245,7 +245,9 @@ function selectAerobicWeek({
   const entries =
     weekEntries.filter(
       entry =>
-        isAerobic(entry.day) &&
+        isAerobicDistanceSession(
+  entry.day
+)&&
         entry.day.simulated !== true
     );
 
