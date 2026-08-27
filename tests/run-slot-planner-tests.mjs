@@ -912,14 +912,13 @@ function testTrainingPhaseRules() {
   );
 
   assert.deepEqual(
-    loading
-      .threshold
-      .secondaryTargets,
-    [
-      'race_specific',
-      'durability',
-    ]
-  );
+  loading
+    .threshold
+    .secondaryTargets,
+  [
+    'durability',
+  ]
+);
 
   const sharpening =
     phaseConfigFor(
