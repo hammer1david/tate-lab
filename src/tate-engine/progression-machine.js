@@ -346,11 +346,13 @@ function paceDefault(
 function stepPaceDefault(
   workout,
   performanceBand,
+  blockNumber,
   stepNumber,
   scoreGroup
 ) {
   return (workout.stepPaceDefaults || []).find(row =>
     Number(row.performance_band) === Number(performanceBand) &&
+    Number(row.block_number || 1) === Number(blockNumber || 1) &&
     Number(row.step_number) === Number(stepNumber) &&
     Number(row.score_group) === Number(scoreGroup)
   ) || null;
@@ -382,15 +384,18 @@ function recomputeBlockWorkDistance(block) {
 
 function recomputeStepWorkDistance(step) {
   const reps = finiteNumber(step.reps) ?? 1;
+  const setCount = finiteNumber(step.setCount) ?? 1;
   const distanceMeters = finiteNumber(step.distanceMeters);
+
   const perRepKm = Number.isFinite(distanceMeters)
     ? distanceMeters / 1000
     : null;
 
   step.repWorkDistanceKm = roundWorkKm(perRepKm);
+
   step.workDistanceKm = roundWorkKm(
     Number.isFinite(perRepKm)
-      ? perRepKm * reps
+      ? perRepKm * reps * setCount
       : null
   );
 }
