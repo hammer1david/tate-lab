@@ -547,6 +547,83 @@ function testWeeklyLongRunIsPlacedOnDesiredDay() {
     assert.equal(sunday.assignment.secondaryTarget, 'long_run');
   }
 }
+function testLoadingPrioritizesDurabilityAndHillWork() {
+  const counts =
+    calculateSlotCounts({
+      event: '10K',
+      phase: 'loading',
+      slotCount: 30,
+    });
+
+  const slots =
+    buildSlotSequence(
+      counts
+    );
+
+  const automatic =
+    buildAutomaticSecondaryPlan({
+      slots,
+      phase: 'loading',
+      trainingDaysPerWeek: 5,
+      hasLongRunDay: true,
+    });
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .durability,
+    2
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .race_specific || 0,
+    0
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .hill_work,
+    1
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .speed || 0,
+    0
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .sprint || 0,
+    0
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .progressive,
+    2
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .strides,
+    2
+  );
+}
 
 function testSharpeningThresholdIsFiftyFiftyRaceSpecific() {
   const counts = calculateSlotCounts({
@@ -568,6 +645,154 @@ function testSharpeningThresholdIsFiftyFiftyRaceSpecific() {
   );
   assert.equal(
     automatic.summary.countsByTarget.durability || 0,
+    0
+  );
+}
+function testSharpeningRemovesGeneralHillAndProgressiveWork() {
+  const counts =
+    calculateSlotCounts({
+      event: '10K',
+      phase: 'sharpening',
+      slotCount: 30,
+    });
+
+  const slots =
+    buildSlotSequence(
+      counts
+    );
+
+  const automatic =
+    buildAutomaticSecondaryPlan({
+      slots,
+      phase: 'sharpening',
+      trainingDaysPerWeek: 5,
+      hasLongRunDay: true,
+    });
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .strides,
+    4
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .progressive || 0,
+    0
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .hill_work || 0,
+    0
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .race_specific,
+    3
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .speed,
+    1
+  );
+}
+function testTaperKeepsSpecificityAndCutsExtraAerobicLoad() {
+  const counts =
+    calculateSlotCounts({
+      event: '10K',
+      phase: 'tapering',
+      slotCount: 30,
+    });
+
+  const slots =
+    buildSlotSequence(
+      counts
+    );
+
+  const automatic =
+    buildAutomaticSecondaryPlan({
+      slots,
+      phase: 'tapering',
+      trainingDaysPerWeek: 5,
+      hasLongRunDay: true,
+    });
+
+  /*
+   * 21 Aerobic anchors × 10%
+   * = floor(2.1)
+   * = 2 Strides secondary slots.
+   */
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .strides,
+    2
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .progressive || 0,
+    0
+  );
+
+  /*
+   * 6 Threshold anchors:
+   * every second one is
+   * Race Specific.
+   */
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .race_specific,
+    3
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .durability || 0,
+    0
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .speed,
+    1
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .sprint || 0,
+    0
+  );
+
+  assert.equal(
+    automatic
+      .summary
+      .countsByTarget
+      .hill_work || 0,
     0
   );
 }
@@ -1234,7 +1459,14 @@ function testMaterializeBandTwoTwoBlocks() {
 testAutomaticSecondaryNeedRatiosAndWeeklyLongRun();
 testAutomaticSecondariesDoNotChangePrimary701020();
 testWeeklyLongRunIsPlacedOnDesiredDay();
+
+testLoadingPrioritizesDurabilityAndHillWork();
+
 testSharpeningThresholdIsFiftyFiftyRaceSpecific();
+testSharpeningRemovesGeneralHillAndProgressiveWork();
+
+testTaperKeepsSpecificityAndCutsExtraAerobicLoad();
+
 testMissingLongRunDayCreatesNeedGap();
 testDefaultWeeklyAvailabilityPattern();
 testUnavailableDaysAreNeverScheduled();
