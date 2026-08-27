@@ -8,6 +8,7 @@ import {
   progressionLeverOrder,
   progressMaterializedWorkout,
   selectProgressionFamily,
+  applyWeeklyWorkoutProgressionToSchedule,
 } from '../src/tate-engine/progression-machine.js';
 
 import {
@@ -679,6 +680,138 @@ function testStepPaceProgressionRespectsBlockNumber() {
     1.02
   );
 }
+function testWeeklyScheduleProgressionCarriesState() {
+  const workout =
+    thresholdWorkout();
+
+  const schedule = {
+    weeks: [
+      1,
+      2,
+      3,
+    ].map(
+      (week, index) => ({
+        week,
+
+        days: [
+          {
+            day: 'tue',
+
+            placementType:
+              'workout',
+
+            simulated:
+              false,
+
+            assignment: {
+              slot:
+                index + 1,
+
+              status:
+                'assigned',
+
+              primaryAnchor:
+                'Threshold',
+
+              workout,
+            },
+          },
+        ],
+      })
+    ),
+  };
+
+
+  const result =
+    applyWeeklyWorkoutProgressionToSchedule({
+      schedule,
+
+      weeklyDecisions: [
+        null,
+        'progress',
+        'progress',
+      ],
+
+      scores: {
+        Threshold:
+          90,
+      },
+
+      current10k:
+        '30:00',
+    });
+
+
+  assert.equal(
+    result.weeks[0].status,
+    'no_feedback'
+  );
+
+
+  const week2 =
+    schedule
+      .weeks[1]
+      .days[0]
+      .assignment;
+
+  assert.equal(
+    week2
+      .progressionResult
+      .lever,
+    'reps'
+  );
+
+  assert.equal(
+    week2
+      .progressionMaterialized
+      .blocks[0]
+      .reps,
+    5
+  );
+
+
+  const week3 =
+    schedule
+      .weeks[2]
+      .days[0]
+      .assignment;
+
+  /*
+   * State must carry forward:
+   * week 3 starts at 5 reps,
+   * not DB default 4.
+   *
+   * Because reps was the previous
+   * lever, pace is preferred next.
+   */
+  assert.equal(
+    week3
+      .progressionResult
+      .lever,
+    'pace'
+  );
+
+  assert.equal(
+    week3
+      .progressionMaterialized
+      .blocks[0]
+      .reps,
+    5
+  );
+
+  assert.equal(
+    week3
+      .progressionMaterialized
+      .progressionPaceGroup,
+    10
+  );
+
+
+  assert.equal(
+    result.changedCount,
+    2
+  );
+}
 const tests = [
   testDecisionNormalization,
   testCapabilities,
@@ -695,6 +828,7 @@ const tests = [
     testStepSetProgressionChangesSetsOnly,
   testRepeatedPaceProgressionAdvancesAgain,
   testStepPaceProgressionRespectsBlockNumber,
+  testWeeklyScheduleProgressionCarriesState,
 ];
 
 for (const test of tests) {
