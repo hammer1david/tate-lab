@@ -545,8 +545,12 @@ export function applyWeeklyKmPlanToSchedule({
   scores = {},
   current10k,
   startWeeklyKm,
+
   progressiveSlots =
     new Set(),
+
+  weeklyDecisions = [],
+
   materializeWorkoutFn =
     materializeWorkout,
 } = {}) {
@@ -573,17 +577,24 @@ export function applyWeeklyKmPlanToSchedule({
       scores.Aerobic ?? 50
     );
 
-  const weeklyTargets =
-    buildWeeklyKmBlock({
+    const weeklyTargets =
+    buildAdaptiveWeeklyKmBlock({
       startWeeklyKm:
         startKm,
+
       phase,
+
       performanceBand:
         volumeBand,
+
       weeks:
         schedule.weeks.length,
+
       peakWeeklyKm:
         startKm,
+
+      decisions:
+        weeklyDecisions,
     });
 
   const duplicateCounts =
@@ -769,6 +780,9 @@ export function applyWeeklyKmPlanToSchedule({
         week.week,
       performanceBand:
         volumeBand,
+            decision:
+        weeklyTargets[index]
+          .decision,
       fullWeekTargetKm,
       completionShare,
       targetWeeklyKm,
