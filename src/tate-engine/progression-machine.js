@@ -1035,18 +1035,22 @@ function isWorkoutProgressionCandidate(
   );
 }
 
-
 export function applyWeeklyWorkoutProgressionToSchedule({
   schedule,
   weeklyDecisions = [],
   scores = {},
   current10k,
+  workouts = [],
+  repeatLimit = 2,
   recoveryStepSeconds = 15,
 } = {}) {
   const stateByWorkoutId =
     new Map();
 
   const recentLeverByWorkoutId =
+    new Map();
+
+  const completedHistoryByStimulus =
     new Map();
 
   const weeks = [];
@@ -1058,6 +1062,70 @@ export function applyWeeklyWorkoutProgressionToSchedule({
     };
   }
 
+  function rememberCompletedDay(day) {
+    if (
+      !day?.simulated ||
+      !isWorkoutProgressionCandidate(day)
+    ) {
+      return;
+    }
+
+    const assignment =
+      day.assignment;
+
+    const workout =
+      assignment?.workout;
+
+    if (!workout) {
+      return;
+    }
+
+    const stimulus =
+      normalizeStimulus(
+        workout.stimulus
+      );
+
+    const history =
+      completedHistoryByStimulus.get(
+        stimulus
+      ) || [];
+
+    history.push({
+      workout,
+      assignment,
+    });
+
+    completedHistoryByStimulus.set(
+      stimulus,
+      history
+    );
+
+    if (
+      assignment
+        .progressionMaterialized
+    ) {
+      stateByWorkoutId.set(
+        workout.id,
+        clone(
+          assignment
+            .progressionMaterialized
+        )
+      );
+    }
+
+    const historicalLever =
+      assignment
+        .progressionResult
+        ?.lever;
+
+    if (historicalLever) {
+      recentLeverByWorkoutId.set(
+        workout.id,
+        historicalLever
+      );
+    }
+  }
+
   for (
     let index = 0;
     index < schedule.weeks.length;
@@ -1067,73 +1135,36 @@ export function applyWeeklyWorkoutProgressionToSchedule({
       schedule.weeks[index];
 
     /*
-     * Completed historical sessions may
-     * already contain progression state.
-     * Re-use it so a rebuild does not
-     * reset TATE back to DB defaults.
+     * Only ACTUALLY completed historical
+     * quality sessions enter family history.
      */
     for (
       const day of week.days || []
     ) {
-      const assignment =
-        day.assignment;
-
-      const workoutId =
-        assignment?.workout?.id;
-
-      if (!workoutId) {
-        continue;
-      }
-
-      if (
-        assignment
-          .progressionMaterialized
-      ) {
-        stateByWorkoutId.set(
-          workoutId,
-          clone(
-            assignment
-              .progressionMaterialized
-          )
-        );
-      }
-
-      const historicalLever =
-        assignment
-          .progressionResult
-          ?.lever;
-
-      if (historicalLever) {
-        recentLeverByWorkoutId.set(
-          workoutId,
-          historicalLever
-        );
-      }
+      rememberCompletedDay(day);
     }
 
     const rawDecision =
       weeklyDecisions[index] ??
       null;
 
-    /*
-     * null means there was no feedback
-     * from the previous week.
-     *
-     * Weekly km may still follow the
-     * phase, but workout difficulty
-     * must not automatically increase.
-     */
     if (!rawDecision) {
       weeks.push({
         week: week.week,
         decision: null,
         changed: false,
+        familyChanged: false,
         lever: null,
         status: 'no_feedback',
       });
 
       continue;
     }
+
+    const decision =
+      normalizeProgressionDecision(
+        rawDecision
+      );
 
     const targetDay =
       (week.days || []).find(
@@ -1147,11 +1178,9 @@ export function applyWeeklyWorkoutProgressionToSchedule({
     if (!targetDay) {
       weeks.push({
         week: week.week,
-        decision:
-          normalizeProgressionDecision(
-            rawDecision
-          ),
+        decision,
         changed: false,
+        familyChanged: false,
         lever: null,
         status:
           'no_eligible_quality',
@@ -1163,8 +1192,103 @@ export function applyWeeklyWorkoutProgressionToSchedule({
     const assignment =
       targetDay.assignment;
 
-    const workout =
+    const plannedWorkout =
       assignment.workout;
+
+    const stimulus =
+      normalizeStimulus(
+        plannedWorkout.stimulus
+      );
+
+    const history =
+      completedHistoryByStimulus.get(
+        stimulus
+      ) || [];
+
+    /*
+     * The last ACTUALLY completed family
+     * is the progression baseline.
+     *
+     * The Slot Planner may have pre-selected
+     * another family, but Maintain/Recover
+     * must not silently change workout family.
+     */
+    const lastCompleted =
+      history.length
+        ? history[
+            history.length - 1
+          ]
+        : null;
+
+    const currentWorkout =
+      lastCompleted?.workout ??
+      plannedWorkout;
+
+    const recentWorkoutIds =
+      history
+        .map(
+          entry =>
+            entry.workout.id
+        )
+        .slice(-6);
+
+    const candidates =
+      (
+        workouts.length
+          ? workouts
+          : [plannedWorkout]
+      ).filter(
+        workout =>
+          workout &&
+          workout.active !== false &&
+          !workout.dynamicType
+      );
+
+    const family =
+      selectProgressionFamily({
+        currentWorkout,
+        candidates,
+        decision,
+        recentWorkoutIds,
+        repeatLimit,
+      });
+
+    const selectedWorkout =
+      family.workout ??
+      currentWorkout;
+
+    const plannedWorkoutId =
+      plannedWorkout.id;
+
+    const sourceWorkoutId =
+      currentWorkout.id;
+
+    const selectedWorkoutId =
+      selectedWorkout.id;
+
+    /*
+     * The progression machine now owns
+     * family selection for this adaptive
+     * quality session.
+     */
+    assignment.workout =
+      selectedWorkout;
+
+    assignment.progressionFamily = {
+      plannedWorkoutId,
+      sourceWorkoutId,
+      selectedWorkoutId,
+
+      switched:
+        family.switched,
+
+      overrodePlannedFamily:
+        selectedWorkoutId !==
+        plannedWorkoutId,
+
+      reason:
+        family.reason,
+    };
 
     const athlete = {
       score:
@@ -1175,40 +1299,101 @@ export function applyWeeklyWorkoutProgressionToSchedule({
       current10k,
     };
 
-    /*
-     * If this workout family was already
-     * progressed earlier, continue from
-     * that state instead of starting
-     * again from reps_default.
-     */
     const baseMaterialized =
       stateByWorkoutId.has(
-        workout.id
+        selectedWorkoutId
       )
         ? clone(
             stateByWorkoutId.get(
-              workout.id
+              selectedWorkoutId
             )
           )
         : materializeWorkout(
-            workout,
+            selectedWorkout,
             athlete
           );
 
+    /*
+     * FAMILY ROTATION COUNTS AS THE
+     * ADAPTATION FOR THIS SESSION.
+     *
+     * Do NOT also change reps/pace/recovery
+     * in the same session.
+     */
+    if (family.switched) {
+      assignment.progressionDecision =
+        decision;
+
+      assignment.progressionMaterialized =
+        baseMaterialized;
+
+      assignment.progressionResult = {
+        changed: true,
+        exhausted: false,
+        lever: null,
+
+        familyChanged: true,
+
+        fromWorkoutId:
+          sourceWorkoutId,
+
+        toWorkoutId:
+          selectedWorkoutId,
+
+        reason:
+          family.reason,
+
+        attempts: [],
+      };
+
+      stateByWorkoutId.set(
+        selectedWorkoutId,
+        clone(
+          baseMaterialized
+        )
+      );
+
+      weeks.push({
+        week:
+          week.week,
+
+        slot:
+          assignment.slot,
+
+        workoutId:
+          selectedWorkoutId,
+
+        decision,
+
+        changed: true,
+
+        familyChanged: true,
+
+        lever: null,
+
+        exhausted: false,
+
+        status:
+          'family_rotated',
+      });
+
+      continue;
+    }
+
     const previousLever =
       recentLeverByWorkoutId.get(
-        workout.id
+        selectedWorkoutId
       );
 
     const result =
       progressMaterializedWorkout({
-        workout,
+        workout:
+          selectedWorkout,
 
         materialized:
           baseMaterialized,
 
-        decision:
-          rawDecision,
+        decision,
 
         recentLevers:
           previousLever
@@ -1231,6 +1416,14 @@ export function applyWeeklyWorkoutProgressionToSchedule({
       lever:
         result.lever,
 
+      familyChanged: false,
+
+      fromWorkoutId:
+        sourceWorkoutId,
+
+      toWorkoutId:
+        selectedWorkoutId,
+
       reason:
         result.reason,
 
@@ -1242,7 +1435,7 @@ export function applyWeeklyWorkoutProgressionToSchedule({
       result.materialized;
 
     stateByWorkoutId.set(
-      workout.id,
+      selectedWorkoutId,
       clone(
         result.materialized
       )
@@ -1250,7 +1443,7 @@ export function applyWeeklyWorkoutProgressionToSchedule({
 
     if (result.lever) {
       recentLeverByWorkoutId.set(
-        workout.id,
+        selectedWorkoutId,
         result.lever
       );
     }
@@ -1263,13 +1456,15 @@ export function applyWeeklyWorkoutProgressionToSchedule({
         assignment.slot,
 
       workoutId:
-        workout.id,
+        selectedWorkoutId,
 
       decision:
         result.decision,
 
       changed:
         result.changed,
+
+      familyChanged: false,
 
       lever:
         result.lever,
@@ -1289,6 +1484,12 @@ export function applyWeeklyWorkoutProgressionToSchedule({
       weeks.filter(
         week =>
           week.changed
+      ).length,
+
+    familyChangeCount:
+      weeks.filter(
+        week =>
+          week.familyChanged
       ).length,
   };
 }
