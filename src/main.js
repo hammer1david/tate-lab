@@ -1625,6 +1625,19 @@ function buildSimulation() {
     adaptation
   );
 
+  const workoutProgression =
+  applyWeeklyWorkoutProgressionToSchedule({
+    schedule,
+
+    weeklyDecisions:
+      adaptation
+        .weeklyWorkoutProgressionDecisions,
+
+    scores,
+
+    current10k:
+      $('current-10k').value,
+  });
   const weeklyKm = readWeeklyKm();
 
   const kmPlan =
