@@ -588,48 +588,131 @@ function testBandsAndGroups() {
 }
 
 
-function testTrainingPhasePlaceholders() {
+function testTrainingPhaseRules() {
   assert.deepEqual(
     TRAINING_PHASES,
-    ['loading', 'base', 'sharpening', 'tapering']
+    [
+      'loading',
+      'base',
+      'sharpening',
+      'tapering',
+    ]
   );
 
-  for (const phase of TRAINING_PHASES) {
+  for (
+    const phase of
+    TRAINING_PHASES
+  ) {
     assert.equal(
-      TRAINING_PHASE_CONFIG[phase].status,
-      'placeholder'
+      TRAINING_PHASE_CONFIG[
+        phase
+      ].status,
+      'active'
     );
+
     assert.equal(
-      TRAINING_PHASE_CONFIG[phase].rulesDefined,
-      false
+      TRAINING_PHASE_CONFIG[
+        phase
+      ].rulesDefined,
+      true
+    );
+
+    assert.equal(
+      TRAINING_PHASE_CONFIG[
+        phase
+      ].primaryDistribution,
+      'fixed_70_20_10'
+    );
+
+    assert.equal(
+      TRAINING_PHASE_CONFIG[
+        phase
+      ].longRun
+        .minimumPerWeek,
+      1
     );
   }
 
   assert.equal(
-    normalizeTrainingPhase('Sharpening'),
+    normalizeTrainingPhase(
+      'Sharpening'
+    ),
     'sharpening'
   );
+
   assert.equal(
-    normalizeTrainingPhase('unknown'),
+    normalizeTrainingPhase(
+      'unknown'
+    ),
     'base'
   );
 
-  const loading = buildGoalPlan({
-    event: '10K',
-    phase: 'loading',
-    slotCount: 10,
-    workouts: [],
-  });
-  const base = buildGoalPlan({
-    event: '10K',
-    phase: 'base',
-    slotCount: 10,
-    workouts: [],
-  });
+  const loading =
+    phaseConfigFor(
+      'loading'
+    );
 
-  assert.equal(loading.phase, 'loading');
-  assert.equal(base.phase, 'base');
-  assert.deepEqual(loading.counts, base.counts);
+  assert.equal(
+    loading
+      .threshold
+      .secondaryEvery,
+    3
+  );
+
+  assert.deepEqual(
+    loading
+      .threshold
+      .secondaryTargets,
+    [
+      'race_specific',
+      'durability',
+    ]
+  );
+
+  const sharpening =
+    phaseConfigFor(
+      'sharpening'
+    );
+
+  assert.equal(
+    sharpening
+      .threshold
+      .primaryShare,
+    0.50
+  );
+
+  assert.equal(
+    sharpening
+      .threshold
+      .secondaryShare,
+    0.50
+  );
+
+  assert.equal(
+    sharpening
+      .threshold
+      .secondaryEvery,
+    2
+  );
+
+  assert.deepEqual(
+    sharpening
+      .threshold
+      .secondaryTargets,
+    [
+      'race_specific',
+    ]
+  );
+
+  const taper =
+    phaseConfigFor(
+      'tapering'
+    );
+
+  assert.equal(
+    taper.weeklyKmPhase,
+    'tapering'
+  );
 }
 
 function testFixed10KPrimaryDistribution() {
@@ -1112,7 +1195,7 @@ testThirtySlotFiveDayRecurringAvailability();
 testAllWorkoutDaysPreservePrimarySequence();
 testNoSelectedTrainingDaysCreatesScheduleGaps();
 testBandsAndGroups();
-testTrainingPhasePlaceholders();
+testTrainingPhaseRules();
 testFixed10KPrimaryDistribution();
 testFixedSecondaryHierarchy();
 testPrimaryPriorityCoverageRotation();
