@@ -902,9 +902,9 @@ if (
         0
       ) {
         const targets =
-          SECONDARY_NEED_RULES
-            .VO2max
-            .targets;
+  phaseRule
+    .vo2max
+    .secondaryTargets;
 
         secondaryPlan[
           slot.slot
