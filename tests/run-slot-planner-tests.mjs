@@ -433,6 +433,24 @@ function testAutomaticSecondaryNeedRatiosAndWeeklyLongRun() {
 
   assert.equal(automatic.summary.countsByTarget.long_run, 6);
   assert.equal(
+  automatic
+    .summary
+    .longRunMinimumPerWeek,
+  phaseConfigFor(
+    'base'
+  ).longRun.minimumPerWeek
+);
+
+assert.equal(
+  automatic
+    .summary
+    .longRunCount,
+  automatic.totalWeeks *
+    phaseConfigFor(
+      'base'
+    ).longRun.minimumPerWeek
+);
+  assert.equal(
     (automatic.summary.countsByTarget.strides || 0) +
       (automatic.summary.countsByTarget.progressive || 0),
     4
