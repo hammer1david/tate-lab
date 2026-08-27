@@ -90,6 +90,178 @@ function materialized(workout) {
   });
 }
 
+function stepSetWorkout() {
+  return {
+    id: '10K_VO2_800_600_400_SETS_TEST',
+    event: '10K',
+    role: 'priority',
+    status: 'draft',
+    active: true,
+    stimulus: 'VO2max',
+    structureType: 'step_sets',
+    dynamicType: null,
+
+    progress_reps: true,
+    progress_pace: false,
+    progress_recovery: false,
+    progress_block_recovery: false,
+
+    blocks: [],
+
+    bandDefaults: [
+      {
+        performance_band: 3,
+        block_number: 1,
+        reps_min: 3,
+        reps_default: 3,
+        reps_max: 4,
+      },
+    ],
+
+    paceDefaults: [],
+
+    steps: [
+      {
+        performance_band: 3,
+        block_number: 1,
+        step_number: 1,
+        distance_m: 800,
+        reps: 1,
+        recovery_type: 'jog',
+        recovery_sec: 120,
+        active: true,
+      },
+      {
+        performance_band: 3,
+        block_number: 1,
+        step_number: 2,
+        distance_m: 600,
+        reps: 1,
+        recovery_type: 'jog',
+        recovery_sec: 120,
+        active: true,
+      },
+      {
+        performance_band: 3,
+        block_number: 1,
+        step_number: 3,
+        distance_m: 400,
+        reps: 1,
+        recovery_type: 'jog',
+        recovery_sec: 120,
+        active: true,
+      },
+    ],
+
+    stepPaceDefaults: [],
+
+    volumeProfiles: [
+      {
+        workout_id:
+          '10K_VO2_800_600_400_SETS_TEST',
+        performance_band: 3,
+        distance_mode: 'fixed',
+        work_distance_km: 1.8,
+      },
+    ],
+  };
+}
+
+function multiBlockStepPaceWorkout() {
+  return {
+    id: '10K_VO2_MULTI_BLOCK_STEP_TEST',
+    event: '10K',
+    role: 'priority',
+    status: 'draft',
+    active: true,
+    stimulus: 'VO2max',
+    structureType: 'steps',
+    dynamicType: null,
+
+    progress_reps: false,
+    progress_pace: true,
+    progress_recovery: false,
+    progress_block_recovery: false,
+
+    blocks: [],
+
+    bandDefaults: [
+      {
+        performance_band: 3,
+        block_number: 1,
+        reps_min: 1,
+        reps_default: 1,
+        reps_max: 1,
+      },
+      {
+        performance_band: 3,
+        block_number: 2,
+        reps_min: 1,
+        reps_default: 1,
+        reps_max: 1,
+      },
+    ],
+
+    paceDefaults: [],
+
+    steps: [
+      {
+        performance_band: 3,
+        block_number: 1,
+        step_number: 1,
+        distance_m: 400,
+        reps: 1,
+        recovery_type: 'jog',
+        recovery_sec: 120,
+        active: true,
+      },
+      {
+        performance_band: 3,
+        block_number: 2,
+        step_number: 1,
+        distance_m: 400,
+        reps: 1,
+        recovery_type: 'jog',
+        recovery_sec: 120,
+        active: true,
+      },
+    ],
+
+    stepPaceDefaults: [
+      {
+        performance_band: 3,
+        block_number: 1,
+        step_number: 1,
+        score_group: 8,
+        pace_factor_default: 0.95,
+      },
+      {
+        performance_band: 3,
+        block_number: 1,
+        step_number: 1,
+        score_group: 9,
+        pace_factor_default: 0.97,
+      },
+
+      {
+        performance_band: 3,
+        block_number: 2,
+        step_number: 1,
+        score_group: 8,
+        pace_factor_default: 1.00,
+      },
+      {
+        performance_band: 3,
+        block_number: 2,
+        step_number: 1,
+        score_group: 9,
+        pace_factor_default: 1.02,
+      },
+    ],
+
+    volumeProfiles: [],
+  };
+}
 function testDecisionNormalization() {
   assert.equal(normalizeProgressionDecision('PROGRESS'), 'progress');
   assert.equal(normalizeProgressionDecision('recovery'), 'recover');
