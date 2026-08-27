@@ -622,6 +622,13 @@ export function buildFeedbackAdaptation({
       feedbackHistory:
         orderedHistory,
     });
+
+  const weeklyWorkoutProgressionDecisions =
+  buildWeeklyWorkoutProgressionDecisions({
+    totalWeeks,
+    feedbackHistory:
+      orderedHistory,
+  });
 return {
   weekRules,
   adaptationReasons,
@@ -630,6 +637,7 @@ return {
   progressiveLongRunKeys,
 
   weeklyProgressionDecisions,
+  weeklyWorkoutProgressionDecisions,
 
   feedbackBalance:
     feedbackBalance(
