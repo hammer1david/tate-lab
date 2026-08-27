@@ -421,69 +421,150 @@ function adjustReps({
   materialized,
   direction,
 }) {
-  const items = materialized.kind === 'steps'
-    ? materialized.steps || []
-    : materialized.blocks || [];
+  if (materialized.kind === 'steps') {
+    const steps = materialized.steps || [];
+    const blockNumbers = [
+      ...new Set(
+        steps.map(step =>
+          Number(step.blockNumber || 1)
+        )
+      ),
+    ];
+
+    for (const blockNumber of blockNumbers) {
+      const blockSteps = steps.filter(
+        step =>
+          Number(step.blockNumber || 1) ===
+          Number(blockNumber)
+      );
+
+      if (!blockSteps.length) continue;
+
+      const source = bandDefault(
+        workout,
+        materialized.performanceBand,
+        blockNumber
+      );
+
+      const current =
+        finiteNumber(blockSteps[0].setCount) ?? 1;
+
+      const min = finiteNumber(source?.reps_min);
+      const max = finiteNumber(source?.reps_max);
+      const next = current + direction;
+
+      if (
+        direction > 0 &&
+        (
+          !Number.isFinite(max) ||
+          next > max
+        )
+      ) {
+        continue;
+      }
+
+      if (
+        direction < 0 &&
+        (
+          !Number.isFinite(min) ||
+          next < min
+        )
+      ) {
+        continue;
+      }
+
+      for (const step of blockSteps) {
+        step.setCount = next;
+        recomputeStepWorkDistance(step);
+      }
+
+      recomputeWorkoutWorkDistance(materialized);
+
+      return {
+        changed: true,
+        detail:
+          `${direction > 0 ? 'increased' : 'reduced'} ` +
+          `sets on block ${blockNumber} ` +
+          `from ${current} to ${next}`,
+      };
+    }
+
+    return {
+      changed: false,
+      detail:
+        'sets are already at the configured bound',
+    };
+  }
+
+  const items = materialized.blocks || [];
 
   for (const item of items) {
-    const numberKey = materialized.kind === 'steps'
-      ? item.stepNumber
-      : item.blockNumber;
+    const numberKey = item.blockNumber;
 
-    const source = materialized.kind === 'steps'
-      ? (workout.steps || []).find(row =>
-          Number(row.performance_band) ===
-            Number(materialized.performanceBand) &&
-          Number(row.step_number) === Number(numberKey)
-        )
-      : bandDefault(
-          workout,
-          materialized.performanceBand,
-          numberKey
-        );
+    const source = bandDefault(
+      workout,
+      materialized.performanceBand,
+      numberKey
+    );
 
     const current = finiteNumber(item.reps);
-    if (!Number.isFinite(current)) continue;
+
+    if (!Number.isFinite(current)) {
+      continue;
+    }
 
     const min = finiteNumber(source?.reps_min);
     const max = finiteNumber(source?.reps_max);
     const next = current + direction;
 
-    if (direction > 0 && Number.isFinite(max) && next > max) {
+    if (
+      direction > 0 &&
+      Number.isFinite(max) &&
+      next > max
+    ) {
       continue;
     }
 
-    if (direction < 0 && Number.isFinite(min) && next < min) {
+    if (
+      direction < 0 &&
+      Number.isFinite(min) &&
+      next < min
+    ) {
       continue;
     }
 
-    if (direction > 0 && !Number.isFinite(max)) {
+    if (
+      direction > 0 &&
+      !Number.isFinite(max)
+    ) {
       continue;
     }
 
-    if (direction < 0 && !Number.isFinite(min)) {
+    if (
+      direction < 0 &&
+      !Number.isFinite(min)
+    ) {
       continue;
     }
 
     item.reps = next;
 
-    if (materialized.kind === 'steps') {
-      recomputeStepWorkDistance(item);
-    } else {
-      recomputeBlockWorkDistance(item);
-    }
-
+    recomputeBlockWorkDistance(item);
     recomputeWorkoutWorkDistance(materialized);
 
     return {
       changed: true,
-      detail: `${direction > 0 ? 'increased' : 'reduced'} reps on ${materialized.kind === 'steps' ? 'step' : 'block'} ${numberKey} from ${current} to ${next}`,
+      detail:
+        `${direction > 0 ? 'increased' : 'reduced'} ` +
+        `reps on block ${numberKey} ` +
+        `from ${current} to ${next}`,
     };
   }
 
   return {
     changed: false,
-    detail: 'reps are already at the configured bound',
+    detail:
+      'reps are already at the configured bound',
   };
 }
 
