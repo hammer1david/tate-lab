@@ -408,6 +408,68 @@ export function buildWeeklyProgressionDecisions({
     }
   );
 }
+
+export function buildWeeklyWorkoutProgressionDecisions({
+  totalWeeks = 1,
+  feedbackHistory = [],
+} = {}) {
+  const decisions =
+    buildWeeklyProgressionDecisions({
+      totalWeeks,
+      feedbackHistory,
+    });
+
+  const feedbackWeeks = new Set(
+    feedbackHistory
+      .map(entry => {
+        const explicitWeek =
+          Number(entry.week);
+
+        const calendarIndex =
+          Number(entry.calendarIndex);
+
+        if (
+          Number.isFinite(explicitWeek) &&
+          explicitWeek > 0
+        ) {
+          return explicitWeek;
+        }
+
+        if (
+          Number.isFinite(calendarIndex)
+        ) {
+          return (
+            Math.floor(
+              calendarIndex / 7
+            ) + 1
+          );
+        }
+
+        return null;
+      })
+      .filter(Number.isFinite)
+  );
+
+  return decisions.map(
+    (decision, index) => {
+      const targetWeek =
+        index + 1;
+
+      if (targetWeek === 1) {
+        return null;
+      }
+
+      const sourceWeek =
+        targetWeek - 1;
+
+      return feedbackWeeks.has(
+        sourceWeek
+      )
+        ? decision
+        : null;
+    }
+  );
+}
 function nextCandidate(calendar, afterIndex, predicate, usedKeys) {
   return calendar.find(item =>
     item.calendarIndex > afterIndex &&
