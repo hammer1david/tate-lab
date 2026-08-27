@@ -5,6 +5,7 @@ import {
   SECONDARY_TARGETS,
   TRAINING_PHASES,
   TRAINING_PHASE_CONFIG,
+  phaseConfigFor,
   normalizeTrainingPhase,
   calculateSlotCounts,
   buildSlotSequence,
