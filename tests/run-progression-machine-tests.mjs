@@ -812,6 +812,180 @@ function testWeeklyScheduleProgressionCarriesState() {
     2
   );
 }
+
+function testWeeklyFamilyRotationUsesCompletedHistory() {
+  const workoutA =
+    thresholdWorkout({
+      id: '10K_THR_A',
+    });
+
+  const workoutB =
+    thresholdWorkout({
+      id: '10K_THR_B',
+    });
+
+  const completedA =
+    materializeWorkout(
+      workoutA,
+      {
+        score: 90,
+        current10k:
+          '30:00',
+      }
+    );
+
+  const schedule = {
+    weeks: [
+      {
+        week: 1,
+
+        days: [
+          {
+            day: 'tue',
+
+            placementType:
+              'workout',
+
+            simulated: true,
+
+            assignment: {
+              slot: 1,
+              status: 'assigned',
+              primaryAnchor:
+                'Threshold',
+              workout:
+                workoutA,
+
+              progressionMaterialized:
+                completedA,
+            },
+          },
+        ],
+      },
+
+      {
+        week: 2,
+
+        days: [
+          {
+            day: 'tue',
+
+            placementType:
+              'workout',
+
+            simulated: true,
+
+            assignment: {
+              slot: 2,
+              status: 'assigned',
+              primaryAnchor:
+                'Threshold',
+              workout:
+                workoutA,
+
+              progressionMaterialized:
+                completedA,
+            },
+          },
+        ],
+      },
+
+      {
+        week: 3,
+
+        days: [
+          {
+            day: 'tue',
+
+            placementType:
+              'workout',
+
+            simulated: false,
+
+            assignment: {
+              slot: 3,
+              status: 'assigned',
+              primaryAnchor:
+                'Threshold',
+              workout:
+                workoutA,
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  const result =
+    applyWeeklyWorkoutProgressionToSchedule({
+      schedule,
+
+      weeklyDecisions: [
+        null,
+        null,
+        'progress',
+      ],
+
+      scores: {
+        Threshold: 90,
+      },
+
+      current10k:
+        '30:00',
+
+      workouts: [
+        workoutA,
+        workoutB,
+      ],
+
+      repeatLimit: 2,
+    });
+
+  const week3 =
+    schedule
+      .weeks[2]
+      .days[0]
+      .assignment;
+
+  assert.equal(
+    week3.workout.id,
+    '10K_THR_B'
+  );
+
+  assert.equal(
+    week3
+      .progressionResult
+      .familyChanged,
+    true
+  );
+
+  /*
+   * Family switch itself is the
+   * single adaptation.
+   *
+   * No reps / pace / recovery
+   * change in the same session.
+   */
+  assert.equal(
+    week3
+      .progressionResult
+      .lever,
+    null
+  );
+
+  assert.equal(
+    week3
+      .progressionMaterialized
+      .blocks[0]
+      .reps,
+    4
+  );
+
+  assert.equal(
+    result.familyChangeCount,
+    1
+  );
+}
 const tests = [
   testDecisionNormalization,
   testCapabilities,
