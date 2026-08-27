@@ -829,76 +829,57 @@ if (
   );
 
   /*
-   * THRESHOLD
-   *
-   * Loading/Base/Tapering:
-   * 2/3 Threshold
-   * 1/3 Secondary.
-   *
-   * Secondary:
-   * Race Specific
-   * Durability
-   *
-   * Sharpening:
-   * 50% Threshold
-   * 50% Race Specific
-   */
-  if (
-    trainingPhase ===
-    'sharpening'
-  ) {
-    thresholdSlots.forEach(
-      (slot, index) => {
-        if (
-          (index + 1) %
-            2 ===
-          0
-        ) {
-          secondaryPlan[
-            slot.slot
-          ] = {
-            target:
-              'race_specific',
+ * THRESHOLD
+ *
+ * Phase policy decides how often
+ * a Threshold anchor becomes a
+ * secondary stimulus.
+ *
+ * Loading / Base / Taper:
+ * 2 primary : 1 secondary
+ *
+ * Sharpening:
+ * 1 primary : 1 Race Specific
+ */
+{
+  const rule =
+    phaseRule.threshold;
 
-            source:
-              'sharpening_threshold_50_50',
-          };
-        }
+  let secondaryIndex = 0;
+
+  thresholdSlots.forEach(
+    (slot, index) => {
+      if (
+        (index + 1) %
+          rule.secondaryEvery !==
+        0
+      ) {
+        return;
       }
-    );
-  } else {
-    let secondaryIndex = 0;
 
-    thresholdSlots.forEach(
-      (slot, index) => {
-        if (
-          (index + 1) %
-            3 ===
-          0
-        ) {
-          const targets =
-            SECONDARY_NEED_RULES
-              .Threshold
-              .targets;
+      const targets =
+        rule.secondaryTargets;
 
-          secondaryPlan[
-            slot.slot
-          ] = {
-            target:
-              targets[
-                secondaryIndex %
-                targets.length
-              ],
+      const target =
+        targets[
+          secondaryIndex %
+          targets.length
+        ];
 
-            source:
-              'threshold_2_of_3',
-          };
+      secondaryPlan[
+        slot.slot
+      ] = {
+        target,
 
-          secondaryIndex += 1;
-        }
-      }
-    );
-  }
+        source:
+          `${trainingPhase}_threshold_phase_rule`,
+      };
+
+      secondaryIndex += 1;
+    }
+  );
+}
+              
 
   /*
    * VO2MAX
