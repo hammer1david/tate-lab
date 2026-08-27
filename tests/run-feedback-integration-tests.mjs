@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 
 import {
   buildFeedbackAdaptation,
+  buildWeeklyProgressionDecisions,
   missedSessionPolicy,
+  progressionDecisionFromFeedback,
 } from '../src/tate-engine/daily-feedback-simulator.js';
-
 import {
   DAY_ROLES,
   blankWeekRule,
@@ -308,7 +309,114 @@ function day(
     'workout'
   );
 }
+/*
+ * 4. Positive feedback progresses.
+ */
+assert.equal(
+  progressionDecisionFromFeedback([
+    {
+      feeling: 'good',
+      training_difficulty:
+        'as_expected',
+      completion_status:
+        'completed',
+      pain_severity: 0,
+    },
+  ]),
+  'progress'
+);
 
+
+/*
+ * 5. Moderate negative feedback maintains.
+ */
+assert.equal(
+  progressionDecisionFromFeedback([
+    {
+      feeling: 'tired',
+      training_difficulty:
+        'as_expected',
+      completion_status:
+        'completed',
+      pain_severity: 0,
+    },
+  ]),
+  'maintain'
+);
+
+
+/*
+ * 6. Strong negative feedback recovers.
+ */
+assert.equal(
+  progressionDecisionFromFeedback([
+    {
+      feeling: 'very_tired',
+      training_difficulty:
+        'hard',
+      completion_status:
+        'completed',
+      pain_severity: 4,
+      pain_area: 'calf',
+    },
+  ]),
+  'recover'
+);
+
+
+/*
+ * 7. Previous week controls next week.
+ */
+const weeklyDecisions =
+  buildWeeklyProgressionDecisions({
+    totalWeeks: 4,
+
+    feedbackHistory: [
+      {
+        week: 1,
+        calendarIndex: 1,
+        feeling: 'good',
+        training_difficulty:
+          'as_expected',
+        completion_status:
+          'completed',
+        pain_severity: 0,
+      },
+
+      {
+        week: 2,
+        calendarIndex: 8,
+        feeling: 'tired',
+        training_difficulty:
+          'hard',
+        completion_status:
+          'completed',
+        pain_severity: 0,
+      },
+
+      {
+        week: 3,
+        calendarIndex: 15,
+        feeling: 'very_tired',
+        training_difficulty:
+          'very_hard',
+        completion_status:
+          'completed',
+        pain_severity: 4,
+        pain_area: 'calf',
+      },
+    ],
+  });
+
+assert.deepEqual(
+  weeklyDecisions,
+  [
+    'progress',
+    'progress',
+    'maintain',
+    'recover',
+  ]
+);
 console.log(
   'TWETE daily feedback integration tests passed'
 );
