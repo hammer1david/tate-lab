@@ -22,24 +22,221 @@ export const TRAINING_PHASE_LABELS = Object.freeze({
   tapering: 'Tapering',
 });
 
-export const TRAINING_PHASE_CONFIG = Object.freeze({
-  loading: Object.freeze({
-    status: 'placeholder',
-    rulesDefined: false,
-  }),
-  base: Object.freeze({
-    status: 'placeholder',
-    rulesDefined: false,
-  }),
-  sharpening: Object.freeze({
-    status: 'placeholder',
-    rulesDefined: false,
-  }),
-  tapering: Object.freeze({
-    status: 'placeholder',
-    rulesDefined: false,
-  }),
-});
+export const TRAINING_PHASE_CONFIG =
+  Object.freeze({
+    loading: Object.freeze({
+      status: 'active',
+      rulesDefined: true,
+
+      primaryDistribution:
+        'fixed_70_20_10',
+
+      weeklyKmPhase:
+        'loading',
+
+      longRun: Object.freeze({
+        minimumPerWeek: 1,
+      }),
+
+      aerobic: Object.freeze({
+        otherSecondaryShare: 0.20,
+
+        otherTargets:
+          Object.freeze([
+            'strides',
+            'progressive',
+          ]),
+      }),
+
+      threshold: Object.freeze({
+        primaryShare: 2 / 3,
+        secondaryShare: 1 / 3,
+
+        secondaryEvery: 3,
+
+        secondaryTargets:
+          Object.freeze([
+            'race_specific',
+            'durability',
+          ]),
+      }),
+
+      vo2max: Object.freeze({
+        primaryShare: 2 / 3,
+        secondaryShare: 1 / 3,
+
+        secondaryEvery: 3,
+
+        secondaryTargets:
+          Object.freeze([
+            'speed',
+            'sprint',
+            'hill_work',
+          ]),
+      }),
+    }),
+
+    base: Object.freeze({
+      status: 'active',
+      rulesDefined: true,
+
+      primaryDistribution:
+        'fixed_70_20_10',
+
+      weeklyKmPhase:
+        'base',
+
+      longRun: Object.freeze({
+        minimumPerWeek: 1,
+      }),
+
+      aerobic: Object.freeze({
+        otherSecondaryShare: 0.20,
+
+        otherTargets:
+          Object.freeze([
+            'strides',
+            'progressive',
+          ]),
+      }),
+
+      threshold: Object.freeze({
+        primaryShare: 2 / 3,
+        secondaryShare: 1 / 3,
+
+        secondaryEvery: 3,
+
+        secondaryTargets:
+          Object.freeze([
+            'race_specific',
+            'durability',
+          ]),
+      }),
+
+      vo2max: Object.freeze({
+        primaryShare: 2 / 3,
+        secondaryShare: 1 / 3,
+
+        secondaryEvery: 3,
+
+        secondaryTargets:
+          Object.freeze([
+            'speed',
+            'sprint',
+            'hill_work',
+          ]),
+      }),
+    }),
+
+    sharpening: Object.freeze({
+      status: 'active',
+      rulesDefined: true,
+
+      primaryDistribution:
+        'fixed_70_20_10',
+
+      weeklyKmPhase:
+        'sharpening',
+
+      longRun: Object.freeze({
+        minimumPerWeek: 1,
+      }),
+
+      aerobic: Object.freeze({
+        otherSecondaryShare: 0.20,
+
+        otherTargets:
+          Object.freeze([
+            'strides',
+            'progressive',
+          ]),
+      }),
+
+      /*
+       * Sharpening:
+       * Threshold anchors are split
+       * 50 / 50 between Threshold
+       * and Race Specific.
+       */
+      threshold: Object.freeze({
+        primaryShare: 0.50,
+        secondaryShare: 0.50,
+
+        secondaryEvery: 2,
+
+        secondaryTargets:
+          Object.freeze([
+            'race_specific',
+          ]),
+      }),
+
+      vo2max: Object.freeze({
+        primaryShare: 2 / 3,
+        secondaryShare: 1 / 3,
+
+        secondaryEvery: 3,
+
+        secondaryTargets:
+          Object.freeze([
+            'speed',
+            'sprint',
+            'hill_work',
+          ]),
+      }),
+    }),
+
+    tapering: Object.freeze({
+      status: 'active',
+      rulesDefined: true,
+
+      primaryDistribution:
+        'fixed_70_20_10',
+
+      weeklyKmPhase:
+        'tapering',
+
+      longRun: Object.freeze({
+        minimumPerWeek: 1,
+      }),
+
+      aerobic: Object.freeze({
+        otherSecondaryShare: 0.20,
+
+        otherTargets:
+          Object.freeze([
+            'strides',
+            'progressive',
+          ]),
+      }),
+
+      threshold: Object.freeze({
+        primaryShare: 2 / 3,
+        secondaryShare: 1 / 3,
+
+        secondaryEvery: 3,
+
+        secondaryTargets:
+          Object.freeze([
+            'race_specific',
+            'durability',
+          ]),
+      }),
+
+      vo2max: Object.freeze({
+        primaryShare: 2 / 3,
+        secondaryShare: 1 / 3,
+
+        secondaryEvery: 3,
+
+        secondaryTargets:
+          Object.freeze([
+            'speed',
+            'sprint',
+            'hill_work',
+          ]),
+      }),
+    }),
+  });
 
 export function normalizeTrainingPhase(value) {
   const key = String(value || '')
