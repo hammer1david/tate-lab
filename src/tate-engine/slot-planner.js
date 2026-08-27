@@ -371,11 +371,8 @@ export const SECONDARY_NEED_RULES =
 
 export const EVENT_SLOT_PROFILES =
   Object.freeze({
-    '10K': Object.freeze({
-      Aerobic: 0.70,
-      Threshold: 0.20,
-      VO2max: 0.10,
-    }),
+    '10K':
+      TEN_K_PRIMARY_DISTRIBUTION,
   });
 
 function clamp(
