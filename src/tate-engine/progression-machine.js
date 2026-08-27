@@ -729,9 +729,13 @@ function adjustPace({
   materialized,
   direction,
 }) {
-  const currentGroup = finiteNumber(
-    materialized.scoreGroup
-  );
+    const currentGroup =
+    finiteNumber(
+      materialized.progressionPaceGroup
+    ) ??
+    finiteNumber(
+      materialized.scoreGroup
+    );
 
   if (!Number.isFinite(currentGroup)) {
     return {
@@ -756,9 +760,10 @@ function adjustPace({
 
   for (const item of items) {
     const nextRow = materialized.kind === 'steps'
-      ? stepPaceDefault(
+            ? stepPaceDefault(
           workout,
           materialized.performanceBand,
+          item.blockNumber,
           item.stepNumber,
           targetGroup
         )
