@@ -27,7 +27,37 @@ export const WEEKLY_KM_PHASE_RULES = Object.freeze({
     label: 'Tapering',
   }),
 });
+export const WEEKLY_KM_DECISIONS = Object.freeze([
+  'recover',
+  'maintain',
+  'progress',
+]);
 
+export const WEEKLY_KM_RECOVER_RATE = 0.05;
+
+export function normalizeWeeklyKmDecision(value) {
+  const key = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+
+  const aliases = {
+    recover: 'recover',
+    recovery: 'recover',
+    reduce: 'recover',
+    deload: 'recover',
+
+    maintain: 'maintain',
+    hold: 'maintain',
+    stable: 'maintain',
+
+    progress: 'progress',
+    progression: 'progress',
+    advance: 'progress',
+  };
+
+  return aliases[key] || 'progress';
+}
 export function normalizeWeeklyKmPhase(value) {
   const key = String(value || '')
     .trim()
@@ -276,6 +306,202 @@ export function buildWeeklyKmBlock({
         performanceBand:
           band,
         peakWeeklyKm,
+        roundingStep,
+      });
+
+    output.push({
+      weekInPhase: week,
+      ...result,
+    });
+
+    previous =
+      result.targetWeeklyKm;
+  }
+
+  return output;
+}
+export function calculateAdaptiveNextWeeklyKm({
+  previousWeeklyKm,
+  phase = 'base',
+  performanceBand = 2,
+  peakWeeklyKm = previousWeeklyKm,
+  decision = 'progress',
+  recoverRate = WEEKLY_KM_RECOVER_RATE,
+  roundingStep = 1,
+} = {}) {
+  const previous = positiveNumber(
+    previousWeeklyKm,
+    'previousWeeklyKm'
+  );
+
+  const normalizedDecision =
+    normalizeWeeklyKmDecision(decision);
+
+  const phaseResult =
+    calculateNextWeeklyKm({
+      previousWeeklyKm: previous,
+      phase,
+      performanceBand,
+      peakWeeklyKm,
+      roundingStep,
+    });
+
+  const phaseTarget =
+    phaseResult.targetWeeklyKm;
+
+  let targetWeeklyKm;
+  let decisionCalculation;
+
+  if (normalizedDecision === 'progress') {
+    targetWeeklyKm = phaseTarget;
+
+    decisionCalculation = {
+      mode: 'follow_phase',
+      phaseTargetWeeklyKm: phaseTarget,
+    };
+  } else if (
+    normalizedDecision === 'maintain'
+  ) {
+    /*
+     * Maintain blocks an increase,
+     * but it must never cancel a planned
+     * phase reduction such as Sharpening
+     * or Tapering.
+     */
+    targetWeeklyKm = Math.min(
+      previous,
+      phaseTarget
+    );
+
+    targetWeeklyKm = roundWeeklyKm(
+      targetWeeklyKm,
+      roundingStep
+    );
+
+    decisionCalculation = {
+      mode: 'hold_or_phase_reduce',
+      previousWeeklyKm: previous,
+      phaseTargetWeeklyKm: phaseTarget,
+    };
+  } else {
+    const rate = Math.max(
+      0,
+      Number(recoverRate) ||
+        WEEKLY_KM_RECOVER_RATE
+    );
+
+    const recoveryTarget =
+      roundWeeklyKm(
+        previous * (1 - rate),
+        roundingStep
+      );
+
+    /*
+     * Recover reduces volume,
+     * but if the phase already prescribes
+     * an even larger reduction
+     * (for example Taper),
+     * the lower phase target wins.
+     */
+    targetWeeklyKm = Math.min(
+      phaseTarget,
+      recoveryTarget
+    );
+
+    decisionCalculation = {
+      mode: 'recover',
+      previousWeeklyKm: previous,
+      recoverRate: rate,
+      recoveryTargetWeeklyKm:
+        recoveryTarget,
+      phaseTargetWeeklyKm:
+        phaseTarget,
+    };
+  }
+
+  return {
+    ...phaseResult,
+
+    decision: normalizedDecision,
+
+    phaseTargetWeeklyKm:
+      phaseTarget,
+
+    targetWeeklyKm,
+
+    changeKm:
+      Math.round(
+        (
+          targetWeeklyKm -
+          previous
+        ) * 1000
+      ) / 1000,
+
+    changePercent:
+      Math.round(
+        (
+          (
+            targetWeeklyKm /
+              previous -
+            1
+          ) *
+          100
+        ) *
+        100
+      ) / 100,
+
+    decisionCalculation,
+  };
+}
+
+export function buildAdaptiveWeeklyKmBlock({
+  startWeeklyKm,
+  phase = 'base',
+  performanceBand = 2,
+  weeks = 1,
+  peakWeeklyKm = startWeeklyKm,
+  decisions = [],
+  recoverRate = WEEKLY_KM_RECOVER_RATE,
+  roundingStep = 1,
+} = {}) {
+  let previous = positiveNumber(
+    startWeeklyKm,
+    'startWeeklyKm'
+  );
+
+  const count = Math.max(
+    1,
+    Math.floor(
+      Number(weeks) || 1
+    )
+  );
+
+  const output = [];
+
+  for (
+    let week = 1;
+    week <= count;
+    week += 1
+  ) {
+    const decision =
+      decisions[week - 1] ??
+      'progress';
+
+    const result =
+      calculateAdaptiveNextWeeklyKm({
+        previousWeeklyKm:
+          previous,
+
+        phase,
+
+        performanceBand,
+
+        peakWeeklyKm,
+
+        decision,
+
+        recoverRate,
+
         roundingStep,
       });
 
