@@ -33,6 +33,10 @@ import {
   applyWeeklyKmPlanToSchedule,
 } from './tate-engine/weekly-plan-km.js';
 
+import {
+  applyWeeklyWorkoutProgressionToSchedule,
+} from './tate-engine/progression-machine.js';
+
 const LAB_VERSION = '0.6.2-detailed-weekly-workouts';
 const $ = id => document.getElementById(id);
 
