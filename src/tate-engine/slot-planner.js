@@ -896,11 +896,13 @@ if (
 
   vo2Slots.forEach(
     (slot, index) => {
-      if (
-        (index + 1) %
-          3 ===
-        0
-      ) {
+ if (
+  (index + 1) %
+    phaseRule
+      .vo2max
+      .secondaryEvery ===
+  0
+) {
         const targets =
   phaseRule
     .vo2max
