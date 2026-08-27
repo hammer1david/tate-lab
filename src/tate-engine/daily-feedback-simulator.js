@@ -255,7 +255,159 @@ export function feedbackBalance(feedbackHistory = []) {
     4
   );
 }
+export function progressionDecisionFromFeedback(
+  feedbackHistory = []
+) {
+  const entries = feedbackHistory.map(
+    entry =>
+      normalizeTweteDailyFeedback(entry)
+  );
 
+  /*
+   * No feedback means TATE follows
+   * the normal planned phase progression.
+   */
+  if (!entries.length) {
+    return 'progress';
+  }
+
+  const recoverSignal = entries.some(
+    entry =>
+      entry.pain_severity >= 4 ||
+      entry.feeling === 'very_tired' ||
+      entry.training_difficulty ===
+        'very_hard' ||
+      (
+        entry.completion_status ===
+          'partial' &&
+        (
+          entry.training_difficulty ===
+            'hard' ||
+          entry.training_difficulty ===
+            'very_hard'
+        )
+      )
+  );
+
+  if (recoverSignal) {
+    return 'recover';
+  }
+
+  const maintainSignal = entries.some(
+    entry =>
+      entry.pain_severity > 0 ||
+      entry.feeling === 'tired' ||
+      entry.training_difficulty ===
+        'hard' ||
+      entry.completion_status ===
+        'partial' ||
+      entry.completion_status ===
+        'skipped'
+  );
+
+  if (maintainSignal) {
+    return 'maintain';
+  }
+
+  const allPositive = entries.every(
+    entry =>
+      entry.completion_status ===
+        'completed' &&
+      entry.pain_severity === 0 &&
+      (
+        entry.feeling === 'great' ||
+        entry.feeling === 'good'
+      ) &&
+      (
+        entry.training_difficulty ===
+          'easy' ||
+        entry.training_difficulty ===
+          'as_expected'
+      )
+  );
+
+  return allPositive
+    ? 'progress'
+    : 'maintain';
+}
+
+
+export function buildWeeklyProgressionDecisions({
+  totalWeeks = 1,
+  feedbackHistory = [],
+} = {}) {
+  const count = Math.max(
+    1,
+    Number(totalWeeks) || 1
+  );
+
+  const history = feedbackHistory
+    .map(entry => {
+      const explicitWeek =
+        Number(entry.week);
+
+      const calendarIndex =
+        Number(entry.calendarIndex);
+
+      const week =
+        Number.isFinite(explicitWeek) &&
+        explicitWeek > 0
+          ? explicitWeek
+          : Number.isFinite(
+              calendarIndex
+            )
+            ? Math.floor(
+                calendarIndex / 7
+              ) + 1
+            : null;
+
+      return {
+        ...entry,
+        resolvedWeek: week,
+      };
+    })
+    .filter(
+      entry =>
+        Number.isFinite(
+          entry.resolvedWeek
+        )
+    );
+
+  return Array.from(
+    { length: count },
+    (_, index) => {
+      const targetWeek =
+        index + 1;
+
+      /*
+       * Week 1 starts from the normal
+       * planned phase progression.
+       *
+       * Every later week reads feedback
+       * from the previous week.
+       */
+      if (targetWeek === 1) {
+        return 'progress';
+      }
+
+      const sourceWeek =
+        targetWeek - 1;
+
+      const sourceFeedback =
+        history.filter(
+          entry =>
+            entry.resolvedWeek ===
+            sourceWeek
+        );
+
+      return sourceFeedback.length
+        ? progressionDecisionFromFeedback(
+            sourceFeedback
+          )
+        : 'progress';
+    }
+  );
+}
 function nextCandidate(calendar, afterIndex, predicate, usedKeys) {
   return calendar.find(item =>
     item.calendarIndex > afterIndex &&
