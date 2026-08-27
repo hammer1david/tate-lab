@@ -1107,6 +1107,145 @@ function testWeeklyFamilyRotationUsesCompletedHistory() {
     1
   );
 }
+function testSkippedWorkoutDoesNotCountForFamilyRotation() {
+  const workoutA =
+    thresholdWorkout({
+      id: '10K_THR_A',
+    });
+
+  const workoutB =
+    thresholdWorkout({
+      id: '10K_THR_B',
+    });
+
+  const schedule = {
+    weeks: [
+      {
+        week: 1,
+        days: [
+          {
+            day: 'tue',
+            placementType: 'workout',
+            simulated: true,
+            missed: true,
+
+            feedback: {
+              completion_status:
+                'skipped',
+            },
+
+            assignment: {
+              slot: 1,
+              status: 'assigned',
+              primaryAnchor:
+                'Threshold',
+              workout:
+                workoutA,
+            },
+          },
+        ],
+      },
+
+      {
+        week: 2,
+        days: [
+          {
+            day: 'tue',
+            placementType: 'workout',
+            simulated: true,
+
+            feedback: {
+              completion_status:
+                'completed',
+            },
+
+            assignment: {
+              slot: 2,
+              status: 'assigned',
+              primaryAnchor:
+                'Threshold',
+              workout:
+                workoutA,
+            },
+          },
+        ],
+      },
+
+      {
+        week: 3,
+        days: [
+          {
+            day: 'tue',
+            placementType: 'workout',
+            simulated: false,
+
+            assignment: {
+              slot: 3,
+              status: 'assigned',
+              primaryAnchor:
+                'Threshold',
+              workout:
+                workoutA,
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  const result =
+    applyWeeklyWorkoutProgressionToSchedule({
+      schedule,
+
+      weeklyDecisions: [
+        null,
+        null,
+        'progress',
+      ],
+
+      scores: {
+        Threshold: 90,
+      },
+
+      current10k: '30:00',
+
+      workouts: [
+        workoutA,
+        workoutB,
+      ],
+
+      repeatLimit: 2,
+    });
+
+  const week3 =
+    schedule.weeks[2]
+      .days[0]
+      .assignment;
+
+  /*
+   * Only one A was actually completed.
+   * The skipped A must not count.
+   *
+   * Therefore repeatLimit 2 has NOT
+   * been reached.
+   */
+  assert.equal(
+    week3.workout.id,
+    '10K_THR_A'
+  );
+
+  assert.equal(
+    week3
+      .progressionResult
+      .familyChanged,
+    false
+  );
+
+  assert.equal(
+    result.familyChangeCount,
+    0
+  );
+}
 const tests = [
   testDecisionNormalization,
   testCapabilities,
