@@ -1084,10 +1084,37 @@ export function formatMaterializedWorkout(workout) {
   if (workout.kind === 'dynamic') {
     return workout.lines || [];
   }
-
   if (workout.kind === 'steps') {
-    const lines =
-      workout.steps.map(step => {
+    const lines = [];
+    const blocks = new Map();
+
+    for (const step of workout.steps || []) {
+      const blockNumber = Number(step.blockNumber || 1);
+
+      if (!blocks.has(blockNumber)) {
+        blocks.set(blockNumber, []);
+      }
+
+      blocks.get(blockNumber).push(step);
+    }
+
+    for (const [blockNumber, blockSteps] of blocks) {
+      const setCount = Math.max(
+        1,
+        number(blockSteps[0]?.setCount, 1)
+      );
+
+      if (blocks.size > 1) {
+        lines.push(
+          setCount > 1
+            ? `Block ${blockNumber} · ${setCount} sets:`
+            : `Block ${blockNumber}:`
+        );
+      } else if (setCount > 1) {
+        lines.push(`${setCount} sets:`);
+      }
+
+      for (const step of blockSteps) {
         const target = Number.isFinite(step.targetSeconds)
           ? ` @ ${formatClock(step.targetSeconds, 1)}`
           : '';
@@ -1107,8 +1134,11 @@ export function formatMaterializedWorkout(workout) {
         const reps =
           step.reps > 1 ? `${step.reps}×` : '';
 
-        return `${reps}${step.distanceMeters}m${target}${pace}${recovery}`.trim();
-      });
+        lines.push(
+          `${reps}${step.distanceMeters}m${target}${pace}${recovery}`.trim()
+        );
+      }
+    }
 
     if (
       Number.isFinite(
