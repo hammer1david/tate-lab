@@ -1673,6 +1673,11 @@ function buildSimulation() {
 
     current10k:
       $('current-10k').value,
+
+    workouts:
+      workoutLibrary,
+
+    repeatLimit: 2,
   });
   const weeklyKm = readWeeklyKm();
 
