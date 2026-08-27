@@ -415,10 +415,12 @@ function budgetSessionForDay({
     });
 
   const materialized =
-    materializeWorkoutFn(
-      assignment.workout,
-      athlete
-    );
+  assignment
+    .progressionMaterialized ??
+  materializeWorkoutFn(
+    assignment.workout,
+    athlete
+  );
 
   const addonKm =
     stridesAddonKm(
