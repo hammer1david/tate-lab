@@ -1063,12 +1063,15 @@ export function applyWeeklyWorkoutProgressionToSchedule({
   }
 
   function rememberCompletedDay(day) {
-    if (
-      !day?.simulated ||
-      !isWorkoutProgressionCandidate(day)
-    ) {
-      return;
-    }
+  if (
+    !day?.simulated ||
+    day.missed === true ||
+    day.feedback?.completion_status ===
+      'skipped' ||
+    !isWorkoutProgressionCandidate(day)
+  ) {
+    return;
+  }
 
     const assignment =
       day.assignment;
