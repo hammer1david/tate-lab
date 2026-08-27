@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildFeedbackAdaptation,
+  buildWeeklyWorkoutProgressionDecisions,
   buildWeeklyProgressionDecisions,
   missedSessionPolicy,
   progressionDecisionFromFeedback,
@@ -11,6 +12,8 @@ import {
   blankWeekRule,
   schedulePlanIntoWeeks,
 } from '../src/tate-engine/week-scheduler.js';
+
+
 
 function fakeAssignment(
   slot,
@@ -415,6 +418,39 @@ assert.deepEqual(
     'progress',
     'maintain',
     'recover',
+  ]
+);
+const workoutDecisions =
+  buildWeeklyWorkoutProgressionDecisions({
+    totalWeeks: 3,
+
+    feedbackHistory: [
+      {
+        week: 1,
+        calendarIndex: 2,
+
+        feeling:
+          'good',
+
+        training_difficulty:
+          'as_expected',
+
+        completion_status:
+          'completed',
+
+        pain_severity:
+          0,
+      },
+    ],
+  });
+
+
+assert.deepEqual(
+  workoutDecisions,
+  [
+    null,
+    'progress',
+    null,
   ]
 );
 console.log(
