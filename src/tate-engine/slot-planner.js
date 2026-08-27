@@ -788,12 +788,12 @@ if (
    * Progressive
    */
   const aerobicOtherCount =
-    Math.floor(
-      aerobicSlots.length *
-      SECONDARY_NEED_RULES
-        .Aerobic
-        .otherSecondaryShare
-    );
+  Math.floor(
+    aerobicSlots.length *
+    phaseRule
+      .aerobic
+      .otherSecondaryShare
+  );
 
   const aerobicOther =
     evenlySpacedCandidates(
