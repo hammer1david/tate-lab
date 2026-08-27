@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   PRIMARY_SECTIONS,
   SECONDARY_TARGETS,
+  TEN_K_PRIMARY_DISTRIBUTION,
   TRAINING_PHASES,
   TRAINING_PHASE_CONFIG,
   phaseConfigFor,
