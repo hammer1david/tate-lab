@@ -22,6 +22,12 @@ export const TRAINING_PHASE_LABELS = Object.freeze({
   tapering: 'Tapering',
 });
 
+export const TEN_K_PRIMARY_DISTRIBUTION =
+  Object.freeze({
+    Aerobic: 0.70,
+    Threshold: 0.20,
+    VO2max: 0.10,
+  });
 export const TRAINING_PHASE_CONFIG =
   Object.freeze({
     loading: Object.freeze({
