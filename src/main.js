@@ -521,7 +521,11 @@ function materializedAssignmentDetails(
       assignment.slot
     );
 
-  const progressionLine =
+  const progressionResult =
+  assignment
+    .progressionResult;
+
+const progressionLine =
   assignment.progressionDecision
     ? (
         `TATE ${
@@ -530,18 +534,24 @@ function materializedAssignmentDetails(
             .toUpperCase()
         }` +
         (
-          assignment
-            .progressionResult
-            ?.changed &&
-          assignment
-            .progressionResult
-            ?.lever
-            ? ` · ${
-                assignment
-                  .progressionResult
-                  .lever
-              }`
-            : ' · unchanged'
+          progressionResult
+            ?.familyChanged
+            ? (
+                ` · family ` +
+                `${progressionResult.fromWorkoutId}` +
+                ` → ` +
+                `${progressionResult.toWorkoutId}`
+              )
+            : progressionResult
+                ?.changed &&
+              progressionResult
+                ?.lever
+              ? (
+                  ` · ${
+                    progressionResult.lever
+                  }`
+                )
+              : ' · unchanged'
         )
       )
     : null;
