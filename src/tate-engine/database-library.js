@@ -1035,12 +1035,18 @@ export function materializeWorkout(
       structure
     );
 
+    const repeatedStepSets =
+    structure.kind === 'steps' &&
+    (structure.steps || []).some(
+      step => number(step.setCount, 1) > 1
+    );
+
   const workDistanceKm =
-    Number.isFinite(profileDistanceKm)
-      ? roundWorkKm(
-          profileDistanceKm
-        )
-      : computedDistanceKm;
+    repeatedStepSets && Number.isFinite(computedDistanceKm)
+      ? computedDistanceKm
+      : Number.isFinite(profileDistanceKm)
+        ? roundWorkKm(profileDistanceKm)
+        : computedDistanceKm;
 
   const workDistanceEstimated =
     distanceMode === 'time_based' &&
