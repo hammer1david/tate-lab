@@ -7,7 +7,7 @@ import {
 } from './distance-selection.js';
 
 import {
-  buildWeeklyKmBlock,
+  buildAdaptiveWeeklyKmBlock,
 } from './weekly-km-calculator.js';
 
 import {
