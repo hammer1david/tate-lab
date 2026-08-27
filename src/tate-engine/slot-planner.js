@@ -647,6 +647,18 @@ const phaseRule =
 
   let longRunCount = 0;
 
+  const longRunMinimumPerWeek =
+  Math.max(
+    0,
+    Math.round(
+      Number(
+        phaseRule
+          .longRun
+          ?.minimumPerWeek
+      ) || 0
+    )
+  );
+
 /*
  * LONG RUN
  *
@@ -657,9 +669,11 @@ const phaseRule =
  * Aerobic anchor and therefore
  * remains inside the 70% Aerobic.
  */
-if (
+
+  if (
   longRunAllowed &&
-  hasLongRunDay
+  hasLongRunDay &&
+  longRunMinimumPerWeek > 0
 ) {
   for (
     let week = 1;
@@ -684,22 +698,6 @@ if (
         totalWeeks
       );
 
-    const inWeek =
-      aerobicSlots.filter(
-        slot => {
-          const index =
-            slot.slot - 1;
-
-          return (
-            index >= startIndex &&
-            index < endIndex &&
-            !blockedAerobic.has(
-              slot.slot
-            )
-          );
-        }
-      );
-
     const weekCenter =
       startIndex +
       (
@@ -709,66 +707,92 @@ if (
       ) /
         2;
 
-    const candidate =
-      (
-        inWeek.length
-          ? inWeek
-          : aerobicSlots.filter(
-              slot =>
-                !blockedAerobic.has(
-                  slot.slot
-                )
-            )
-      )
-        .sort(
-          (a, b) =>
-            Math.abs(
-              (
-                a.slot - 1
-              ) -
-              weekCenter
-            ) -
+    for (
+      let minimumIndex = 0;
+      minimumIndex <
+        longRunMinimumPerWeek;
+      minimumIndex += 1
+    ) {
+      const inWeek =
+        aerobicSlots.filter(
+          slot => {
+            const index =
+              slot.slot - 1;
+
+            return (
+              index >= startIndex &&
+              index < endIndex &&
+              !blockedAerobic.has(
+                slot.slot
+              )
+            );
+          }
+        );
+
+      const candidate =
+        (
+          inWeek.length
+            ? inWeek
+            : aerobicSlots.filter(
+                slot =>
+                  !blockedAerobic.has(
+                    slot.slot
+                  )
+              )
+        )
+          .sort(
+            (a, b) =>
               Math.abs(
                 (
-                  b.slot - 1
+                  a.slot - 1
                 ) -
                 weekCenter
-              ) ||
-            a.slot -
-              b.slot
-        )[0];
+              ) -
+                Math.abs(
+                  (
+                    b.slot - 1
+                  ) -
+                  weekCenter
+                ) ||
+              a.slot -
+                b.slot
+          )[0];
 
-    if (candidate) {
-      secondaryPlan[
-        candidate.slot
-      ] = {
-        target:
-          'long_run',
+      if (candidate) {
+        secondaryPlan[
+          candidate.slot
+        ] = {
+          target:
+            'long_run',
 
-        week,
+          week,
 
-        source:
-          'weekly_minimum',
-      };
+          source:
+            `${trainingPhase}_long_run_phase_rule`,
+        };
 
-      blockedAerobic.add(
-        candidate.slot
-      );
+        blockedAerobic.add(
+          candidate.slot
+        );
 
-      longRunCount += 1;
-    } else {
-      gaps.push({
-        type:
-          'long_run_need_gap',
+        longRunCount += 1;
+      } else {
+        gaps.push({
+          type:
+            'long_run_need_gap',
 
-        week,
+          week,
 
-        reason:
-          'No Aerobic Primary anchor is available to satisfy the weekly Long Run minimum while preserving the 70/20/10 allocation.',
-      });
+          reason:
+            `Phase ${trainingPhase} requires ${longRunMinimumPerWeek} Long Run(s) per week, but no Aerobic Primary anchor is available.`,
+        });
+      }
     }
   }
-} else if (longRunAllowed) {
+} else if (
+  longRunAllowed &&
+  longRunMinimumPerWeek > 0
+) {
   gaps.push({
     type:
       'long_run_day_missing',
@@ -776,9 +800,10 @@ if (
     week: null,
 
     reason:
-      'No Long Run Day is selected, so the weekly Long Run minimum cannot be scheduled.',
+      `Phase ${trainingPhase} requires ${longRunMinimumPerWeek} Long Run(s) per week, but no Long Run Day is selected.`,
   });
-}
+  }
+  
 
   /*
    * OTHER AEROBIC SECONDARIES
