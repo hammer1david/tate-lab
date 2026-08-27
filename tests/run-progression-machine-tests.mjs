@@ -496,6 +496,127 @@ function testMaintainNeverRotatesFamily() {
   assert.equal(result.switched, false);
   assert.equal(result.workout.id, current.id);
 }
+function testMaintainKeepsLastCompletedFamily() {
+  const workoutA =
+    thresholdWorkout({
+      id: '10K_THR_A',
+    });
+
+  const workoutB =
+    thresholdWorkout({
+      id: '10K_THR_B',
+    });
+
+  const schedule = {
+    weeks: [
+      {
+        week: 1,
+
+        days: [
+          {
+            day: 'tue',
+
+            placementType:
+              'workout',
+
+            simulated: true,
+
+            assignment: {
+              slot: 1,
+              status: 'assigned',
+              primaryAnchor:
+                'Threshold',
+              workout:
+                workoutA,
+            },
+          },
+        ],
+      },
+
+      {
+        week: 2,
+
+        days: [
+          {
+            day: 'tue',
+
+            placementType:
+              'workout',
+
+            simulated: false,
+
+            /*
+             * Slot Planner pre-selected B,
+             * but Maintain must keep the
+             * actually completed family A.
+             */
+            assignment: {
+              slot: 2,
+              status: 'assigned',
+              primaryAnchor:
+                'Threshold',
+              workout:
+                workoutB,
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  applyWeeklyWorkoutProgressionToSchedule({
+    schedule,
+
+    weeklyDecisions: [
+      null,
+      'maintain',
+    ],
+
+    scores: {
+      Threshold: 90,
+    },
+
+    current10k:
+      '30:00',
+
+    workouts: [
+      workoutA,
+      workoutB,
+    ],
+  });
+
+  const week2 =
+    schedule
+      .weeks[1]
+      .days[0]
+      .assignment;
+
+  assert.equal(
+    week2.workout.id,
+    '10K_THR_A'
+  );
+
+  assert.equal(
+    week2
+      .progressionDecision,
+    'maintain'
+  );
+
+  assert.equal(
+    week2
+      .progressionResult
+      .lever,
+    null
+  );
+
+  assert.equal(
+    week2
+      .progressionMaterialized
+      .blocks[0]
+      .reps,
+    4
+  );
+}
 
 function testProgressionPlanReturnsFamilyAndOnePreferredLever() {
   const current = thresholdWorkout({ id: 'A' });
@@ -1003,6 +1124,8 @@ const tests = [
   testRepeatedPaceProgressionAdvancesAgain,
   testStepPaceProgressionRespectsBlockNumber,
   testWeeklyScheduleProgressionCarriesState,
+  testWeeklyFamilyRotationUsesCompletedHistory,
+testMaintainKeepsLastCompletedFamily,
 ];
 
 for (const test of tests) {
