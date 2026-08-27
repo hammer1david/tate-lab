@@ -194,5 +194,194 @@ assert.match(
   formatMaterializedWorkout(materializedTime).at(-1),
   /Estimated work distance 9\.23 km/
 );
+const stepSetWorkout = {
+  id: 'TEST_800_600_400_SETS',
+  event,
+  role: 'priority',
+  status: 'draft',
+  stimulus: 'VO2max',
+  structureType: 'step_sets',
+  dynamicType: null,
+  blocks: [],
+  bandDefaults: [
+    {
+      performance_band: 1,
+      block_number: 1,
+      reps_min: 2,
+      reps_default: 2,
+      reps_max: 2
+    },
+    {
+      performance_band: 2,
+      block_number: 1,
+      reps_min: 2,
+      reps_default: 3,
+      reps_max: 3
+    },
+    {
+      performance_band: 3,
+      block_number: 1,
+      reps_min: 3,
+      reps_default: 3,
+      reps_max: 4
+    },
+  ],
 
+  paceDefaults: [],
+
+  steps: [
+    {
+      performance_band: 1,
+      block_number: 1,
+      step_number: 1,
+      distance_m: 800,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 150
+    },
+    {
+      performance_band: 1,
+      block_number: 1,
+      step_number: 2,
+      distance_m: 600,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 150
+    },
+    {
+      performance_band: 1,
+      block_number: 1,
+      step_number: 3,
+      distance_m: 400,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 150
+    },
+
+    {
+      performance_band: 2,
+      block_number: 1,
+      step_number: 1,
+      distance_m: 800,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 150
+    },
+    {
+      performance_band: 2,
+      block_number: 1,
+      step_number: 2,
+      distance_m: 600,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 150
+    },
+    {
+      performance_band: 2,
+      block_number: 1,
+      step_number: 3,
+      distance_m: 400,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 150
+    },
+
+    {
+      performance_band: 3,
+      block_number: 1,
+      step_number: 1,
+      distance_m: 800,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 120
+    },
+    {
+      performance_band: 3,
+      block_number: 1,
+      step_number: 2,
+      distance_m: 600,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 120
+    },
+    {
+      performance_band: 3,
+      block_number: 1,
+      step_number: 3,
+      distance_m: 400,
+      reps: 1,
+      recovery_type: 'jog',
+      recovery_sec: 120
+    },
+  ],
+
+  stepPaceDefaults: [],
+
+  volumeProfiles: [
+    {
+      workout_id: 'TEST_800_600_400_SETS',
+      performance_band: 1,
+      distance_mode: 'fixed',
+      work_distance_km: 1.8
+    },
+    {
+      workout_id: 'TEST_800_600_400_SETS',
+      performance_band: 2,
+      distance_mode: 'fixed',
+      work_distance_km: 1.8
+    },
+    {
+      workout_id: 'TEST_800_600_400_SETS',
+      performance_band: 3,
+      distance_mode: 'fixed',
+      work_distance_km: 1.8
+    },
+  ],
+};
+
+for (const testCase of [
+  {
+    score: 20,
+    sets: 2,
+    km: 3.6
+  },
+  {
+    score: 50,
+    sets: 3,
+    km: 5.4
+  },
+  {
+    score: 90,
+    sets: 3,
+    km: 5.4
+  },
+]) {
+  const materializedSets = materializeWorkout(
+    stepSetWorkout,
+    {
+      score: testCase.score,
+      current10k: '30:00',
+    }
+  );
+
+  assert.equal(
+    materializedSets.kind,
+    'steps'
+  );
+
+  assert.equal(
+    materializedSets.steps[0].setCount,
+    testCase.sets
+  );
+
+  assert.equal(
+    materializedSets.workDistanceKm,
+    testCase.km
+  );
+
+  assert.match(
+    formatMaterializedWorkout(materializedSets)[0],
+    new RegExp(`^${testCase.sets} sets:`)
+  );
+}
 console.log(`dynamic library tests passed (${library.length} dynamic workouts)`);
