@@ -1,4 +1,7 @@
-import { normalizeStimulus } from './database-library.js';
+import {
+  materializeWorkout,
+  normalizeStimulus,
+} from './database-library.js';
 
 export const PROGRESSION_DECISIONS = Object.freeze([
   'recover',
@@ -996,5 +999,296 @@ export function buildProgressionPlan({
     familyReason: family.reason,
     leverOrder,
     preferredLever: leverOrder[0] || null,
+  };
+}
+function isWorkoutProgressionCandidate(
+  day
+) {
+  const assignment =
+    day?.assignment;
+
+  const workout =
+    assignment?.workout;
+
+  if (
+    !assignment ||
+    assignment.status === 'missing' ||
+    !workout
+  ) {
+    return false;
+  }
+
+  /*
+   * v1 progression is currently for
+   * canonical fixed quality workouts.
+   * Dynamic Aerobic / Recovery /
+   * Long Run etc. remain controlled
+   * by their own engines.
+   */
+  if (workout.dynamicType) {
+    return false;
+  }
+
+  return (
+    day.placementType === 'workout' ||
+    day.placementType === 'speed'
+  );
+}
+
+
+export function applyWeeklyWorkoutProgressionToSchedule({
+  schedule,
+  weeklyDecisions = [],
+  scores = {},
+  current10k,
+  recoveryStepSeconds = 15,
+} = {}) {
+  const stateByWorkoutId =
+    new Map();
+
+  const recentLeverByWorkoutId =
+    new Map();
+
+  const weeks = [];
+
+  if (!schedule?.weeks?.length) {
+    return {
+      weeks,
+      changedCount: 0,
+    };
+  }
+
+  for (
+    let index = 0;
+    index < schedule.weeks.length;
+    index += 1
+  ) {
+    const week =
+      schedule.weeks[index];
+
+    /*
+     * Completed historical sessions may
+     * already contain progression state.
+     * Re-use it so a rebuild does not
+     * reset TATE back to DB defaults.
+     */
+    for (
+      const day of week.days || []
+    ) {
+      const assignment =
+        day.assignment;
+
+      const workoutId =
+        assignment?.workout?.id;
+
+      if (!workoutId) {
+        continue;
+      }
+
+      if (
+        assignment
+          .progressionMaterialized
+      ) {
+        stateByWorkoutId.set(
+          workoutId,
+          clone(
+            assignment
+              .progressionMaterialized
+          )
+        );
+      }
+
+      const historicalLever =
+        assignment
+          .progressionResult
+          ?.lever;
+
+      if (historicalLever) {
+        recentLeverByWorkoutId.set(
+          workoutId,
+          historicalLever
+        );
+      }
+    }
+
+    const rawDecision =
+      weeklyDecisions[index] ??
+      null;
+
+    /*
+     * null means there was no feedback
+     * from the previous week.
+     *
+     * Weekly km may still follow the
+     * phase, but workout difficulty
+     * must not automatically increase.
+     */
+    if (!rawDecision) {
+      weeks.push({
+        week: week.week,
+        decision: null,
+        changed: false,
+        lever: null,
+        status: 'no_feedback',
+      });
+
+      continue;
+    }
+
+    const targetDay =
+      (week.days || []).find(
+        day =>
+          !day.simulated &&
+          isWorkoutProgressionCandidate(
+            day
+          )
+      );
+
+    if (!targetDay) {
+      weeks.push({
+        week: week.week,
+        decision:
+          normalizeProgressionDecision(
+            rawDecision
+          ),
+        changed: false,
+        lever: null,
+        status:
+          'no_eligible_quality',
+      });
+
+      continue;
+    }
+
+    const assignment =
+      targetDay.assignment;
+
+    const workout =
+      assignment.workout;
+
+    const athlete = {
+      score:
+        scores?.[
+          assignment.primaryAnchor
+        ] ?? 50,
+
+      current10k,
+    };
+
+    /*
+     * If this workout family was already
+     * progressed earlier, continue from
+     * that state instead of starting
+     * again from reps_default.
+     */
+    const baseMaterialized =
+      stateByWorkoutId.has(
+        workout.id
+      )
+        ? clone(
+            stateByWorkoutId.get(
+              workout.id
+            )
+          )
+        : materializeWorkout(
+            workout,
+            athlete
+          );
+
+    const previousLever =
+      recentLeverByWorkoutId.get(
+        workout.id
+      );
+
+    const result =
+      progressMaterializedWorkout({
+        workout,
+
+        materialized:
+          baseMaterialized,
+
+        decision:
+          rawDecision,
+
+        recentLevers:
+          previousLever
+            ? [previousLever]
+            : [],
+
+        recoveryStepSeconds,
+      });
+
+    assignment.progressionDecision =
+      result.decision;
+
+    assignment.progressionResult = {
+      changed:
+        result.changed,
+
+      exhausted:
+        result.exhausted,
+
+      lever:
+        result.lever,
+
+      reason:
+        result.reason,
+
+      attempts:
+        result.attempts,
+    };
+
+    assignment.progressionMaterialized =
+      result.materialized;
+
+    stateByWorkoutId.set(
+      workout.id,
+      clone(
+        result.materialized
+      )
+    );
+
+    if (result.lever) {
+      recentLeverByWorkoutId.set(
+        workout.id,
+        result.lever
+      );
+    }
+
+    weeks.push({
+      week:
+        week.week,
+
+      slot:
+        assignment.slot,
+
+      workoutId:
+        workout.id,
+
+      decision:
+        result.decision,
+
+      changed:
+        result.changed,
+
+      lever:
+        result.lever,
+
+      exhausted:
+        result.exhausted,
+
+      status:
+        'applied',
+    });
+  }
+
+  return {
+    weeks,
+
+    changedCount:
+      weeks.filter(
+        week =>
+          week.changed
+      ).length,
   };
 }
