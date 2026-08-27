@@ -1662,12 +1662,13 @@ function buildSimulation() {
     : null;
 
   lastSimulation = {
-    plan,
-    schedule,
-    adaptation,
-    progressiveSlots,
-    kmPlan,
-  };
+  plan,
+  schedule,
+  adaptation,
+  progressiveSlots,
+  workoutProgression,
+  kmPlan,
+};
 
   renderPlan(
     plan,
