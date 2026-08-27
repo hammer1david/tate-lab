@@ -727,6 +727,129 @@ assert.equal(
 
   'max'
 );
+
+const adaptiveKmSchedule = {
+  trainingDaysPerWeek: 1,
+
+  weeks: [
+    {
+      week: 1,
+      trainingDays: 1,
+      scheduledTrainingDays: 1,
+      days: [
+        {
+          day: 'mon',
+          assignment: {
+            slot: 101,
+            primaryAnchor:
+              'Aerobic',
+            workout: {
+              id: 'A101',
+              dynamicType:
+                'aerobic',
+            },
+          },
+        },
+      ],
+    },
+
+    {
+      week: 2,
+      trainingDays: 1,
+      scheduledTrainingDays: 1,
+      days: [
+        {
+          day: 'mon',
+          assignment: {
+            slot: 102,
+            primaryAnchor:
+              'Aerobic',
+            workout: {
+              id: 'A102',
+              dynamicType:
+                'aerobic',
+            },
+          },
+        },
+      ],
+    },
+
+    {
+      week: 3,
+      trainingDays: 1,
+      scheduledTrainingDays: 1,
+      days: [
+        {
+          day: 'mon',
+          assignment: {
+            slot: 103,
+            primaryAnchor:
+              'Aerobic',
+            workout: {
+              id: 'A103',
+              dynamicType:
+                'aerobic',
+            },
+          },
+        },
+      ],
+    },
+  ],
+};
+
+
+const adaptiveKmResult =
+  applyWeeklyKmPlanToSchedule({
+    schedule:
+      adaptiveKmSchedule,
+
+    phase:
+      'loading',
+
+    scores: {
+      Aerobic: 80,
+    },
+
+    startWeeklyKm: 100,
+
+    current10k:
+      '35:00',
+
+    weeklyDecisions: [
+      'progress',
+      'maintain',
+      'recover',
+    ],
+
+    materializeWorkoutFn:
+      fakeMaterialize,
+  });
+
+
+assert.deepEqual(
+  adaptiveKmResult.weeks.map(
+    week =>
+      week.fullWeekTargetKm
+  ),
+  [
+    103,
+    103,
+    98,
+  ]
+);
+
+
+assert.deepEqual(
+  adaptiveKmResult.weeks.map(
+    week =>
+      week.decision
+  ),
+  [
+    'progress',
+    'maintain',
+    'recover',
+  ]
+);
 console.log(
   'TATE real weekly km integration tests passed'
 );
