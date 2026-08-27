@@ -1624,18 +1624,25 @@ function buildSimulation() {
   const weeklyKm = readWeeklyKm();
 
   const kmPlan =
-    Number.isFinite(weeklyKm)
-      ? applyWeeklyKmPlanToSchedule({
-          schedule,
-          phase,
-          scores,
-          current10k:
-            $('current-10k').value,
-          startWeeklyKm:
-            weeklyKm,
-          progressiveSlots,
-        })
-      : null;
+  Number.isFinite(weeklyKm)
+    ? applyWeeklyKmPlanToSchedule({
+        schedule,
+        phase,
+        scores,
+
+        current10k:
+          $('current-10k').value,
+
+        startWeeklyKm:
+          weeklyKm,
+
+        progressiveSlots,
+
+        weeklyDecisions:
+          adaptation
+            .weeklyProgressionDecisions,
+      })
+    : null;
 
   lastSimulation = {
     plan,
