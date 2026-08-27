@@ -508,7 +508,10 @@ function materializedAssignmentDetails(
     assignment.longRunWeeklyShare,
 };
 
-  const workout = materializeWorkout(
+  const workout =
+  assignment
+    .progressionMaterialized ??
+  materializeWorkout(
     assignment.workout,
     athlete
   );
@@ -518,14 +521,47 @@ function materializedAssignmentDetails(
       assignment.slot
     );
 
-  const lines = [
-    ...(Number.isFinite(plannedKm)
-      ? [
-          `${plannedKm} km planned session total`,
-        ]
-      : []),
-    ...formatMaterializedWorkout(workout),
-  ];
+  const progressionLine =
+  assignment.progressionDecision
+    ? (
+        `TATE ${
+          assignment
+            .progressionDecision
+            .toUpperCase()
+        }` +
+        (
+          assignment
+            .progressionResult
+            ?.changed &&
+          assignment
+            .progressionResult
+            ?.lever
+            ? ` · ${
+                assignment
+                  .progressionResult
+                  .lever
+              }`
+            : ' · unchanged'
+        )
+      )
+    : null;
+
+
+const lines = [
+  ...(progressionLine
+    ? [progressionLine]
+    : []),
+
+  ...(Number.isFinite(plannedKm)
+    ? [
+        `${plannedKm} km planned session total`,
+      ]
+    : []),
+
+  ...formatMaterializedWorkout(
+    workout
+  ),
+];
 
   let addon = null;
 
