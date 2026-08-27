@@ -995,8 +995,9 @@ const phaseRule =
           vo2Slots.length,
       },
 
-      longRunCount,
-      countsByTarget,
+      longRunMinimumPerWeek,
+longRunCount,
+countsByTarget,
     },
   };
 }
