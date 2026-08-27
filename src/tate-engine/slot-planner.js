@@ -578,7 +578,10 @@ export function buildAutomaticSecondaryPlan({
     normalizeTrainingPhase(
       phase
     );
-
+const phaseRule =
+  phaseConfigFor(
+    trainingPhase
+  );
   const daysPerWeek =
     clamp(
       Math.round(
