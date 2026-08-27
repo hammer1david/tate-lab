@@ -162,16 +162,20 @@ vo2max: Object.freeze({
       longRun: Object.freeze({
         minimumPerWeek: 1,
       }),
+aerobic: Object.freeze({
+  otherSecondaryShare: 0.20,
 
-      aerobic: Object.freeze({
-        otherSecondaryShare: 0.20,
-
-        otherTargets:
-          Object.freeze([
-            'strides',
-            'progressive',
-          ]),
-      }),
+  /*
+   * Sharpening:
+   * retain neuromuscular speed,
+   * but stop adding Progressive
+   * aerobic loading.
+   */
+  otherTargets:
+    Object.freeze([
+      'strides',
+    ]),
+}),
 
       /*
        * Sharpening:
@@ -192,18 +196,22 @@ vo2max: Object.freeze({
       }),
 
       vo2max: Object.freeze({
-        primaryShare: 2 / 3,
-        secondaryShare: 1 / 3,
+  primaryShare: 2 / 3,
+  secondaryShare: 1 / 3,
 
-        secondaryEvery: 3,
+  secondaryEvery: 3,
 
-        secondaryTargets:
-          Object.freeze([
-            'speed',
-            'sprint',
-            'hill_work',
-          ]),
-      }),
+  /*
+   * Near competition:
+   * speed quality replaces
+   * general hill development.
+   */
+  secondaryTargets:
+    Object.freeze([
+      'speed',
+      'sprint',
+    ]),
+}),
     }),
 
     tapering: Object.freeze({
@@ -221,41 +229,54 @@ vo2max: Object.freeze({
       }),
 
       aerobic: Object.freeze({
-        otherSecondaryShare: 0.20,
+  /*
+   * Taper:
+   * fewer additional aerobic
+   * secondary sessions.
+   */
+  otherSecondaryShare: 0.10,
 
-        otherTargets:
-          Object.freeze([
-            'strides',
-            'progressive',
-          ]),
-      }),
+  otherTargets:
+    Object.freeze([
+      'strides',
+    ]),
+}),
 
       threshold: Object.freeze({
-        primaryShare: 2 / 3,
-        secondaryShare: 1 / 3,
+  primaryShare: 0.50,
+  secondaryShare: 0.50,
 
-        secondaryEvery: 3,
+  secondaryEvery: 2,
 
-        secondaryTargets:
-          Object.freeze([
-            'race_specific',
-            'durability',
-          ]),
-      }),
+  /*
+   * Maintain race-specific intensity
+   * while total weekly volume falls.
+   */
+  secondaryTargets:
+    Object.freeze([
+      'race_specific',
+    ]),
+}),
 
       vo2max: Object.freeze({
-        primaryShare: 2 / 3,
-        secondaryShare: 1 / 3,
+  primaryShare: 2 / 3,
+  secondaryShare: 1 / 3,
 
-        secondaryEvery: 3,
+  secondaryEvery: 3,
 
-        secondaryTargets:
-          Object.freeze([
-            'speed',
-            'sprint',
-            'hill_work',
-          ]),
-      }),
+  /*
+   * If a secondary VO2 exposure
+   * exists during a longer taper,
+   * only Speed is allowed.
+   *
+   * No Hill Work.
+   * No Sprint volume cycle.
+   */
+  secondaryTargets:
+    Object.freeze([
+      'speed',
+    ]),
+}),
     }),
   });
 
