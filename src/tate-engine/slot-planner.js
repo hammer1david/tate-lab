@@ -35,7 +35,7 @@ export const TRAINING_PHASE_CONFIG =
       rulesDefined: true,
 
       primaryDistribution:
-        'fixed_70_20_10',
+  TEN_K_PRIMARY_DISTRIBUTION,
 
       weeklyKmPhase:
         'loading',
@@ -87,8 +87,8 @@ export const TRAINING_PHASE_CONFIG =
       rulesDefined: true,
 
       primaryDistribution:
-        'fixed_70_20_10',
-
+  TEN_K_PRIMARY_DISTRIBUTION,
+      
       weeklyKmPhase:
         'base',
 
@@ -139,7 +139,7 @@ export const TRAINING_PHASE_CONFIG =
       rulesDefined: true,
 
       primaryDistribution:
-        'fixed_70_20_10',
+  TEN_K_PRIMARY_DISTRIBUTION,
 
       weeklyKmPhase:
         'sharpening',
@@ -196,7 +196,7 @@ export const TRAINING_PHASE_CONFIG =
       rulesDefined: true,
 
       primaryDistribution:
-        'fixed_70_20_10',
+  TEN_K_PRIMARY_DISTRIBUTION,
 
       weeklyKmPhase:
         'tapering',
