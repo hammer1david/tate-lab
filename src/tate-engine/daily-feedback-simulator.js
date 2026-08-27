@@ -554,13 +554,24 @@ export function buildFeedbackAdaptation({
       }
     }
   }
+  const weeklyProgressionDecisions =
+    buildWeeklyProgressionDecisions({
+      totalWeeks,
+      feedbackHistory:
+        orderedHistory,
+    });
+return {
+  weekRules,
+  adaptationReasons,
+  heldWorkoutKeys,
+  forceRecoveryKeys,
+  progressiveLongRunKeys,
 
-  return {
-    weekRules,
-    adaptationReasons,
-    heldWorkoutKeys,
-    forceRecoveryKeys,
-    progressiveLongRunKeys,
-    feedbackBalance: feedbackBalance(orderedHistory),
-  };
+  weeklyProgressionDecisions,
+
+  feedbackBalance:
+    feedbackBalance(
+      orderedHistory
+    ),
+};
 }
