@@ -805,10 +805,10 @@ if (
   aerobicOther.forEach(
     (slot, index) => {
       const targets =
-        SECONDARY_NEED_RULES
-          .Aerobic
-          .otherTargets;
-
+  phaseRule
+    .aerobic
+    .otherTargets;
+      
       secondaryPlan[
         slot.slot
       ] = {
