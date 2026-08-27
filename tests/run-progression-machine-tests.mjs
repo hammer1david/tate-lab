@@ -517,7 +517,168 @@ function testProgressionPlanReturnsFamilyAndOnePreferredLever() {
     ['pace', 'recovery', 'reps']
   );
 }
+function testStepSetProgressionChangesSetsOnly() {
+  const workout = stepSetWorkout();
 
+  const before = materializeWorkout(
+    workout,
+    {
+      score: 90,
+      current10k: '30:00',
+    }
+  );
+
+  assert.equal(
+    before.steps[0].setCount,
+    3
+  );
+
+  assert.equal(
+    before.workDistanceKm,
+    5.4
+  );
+
+  const result =
+    progressMaterializedWorkout({
+      workout,
+      materialized: before,
+      decision: 'progress',
+    });
+
+  assert.equal(
+    result.changed,
+    true
+  );
+
+  assert.equal(
+    result.lever,
+    'reps'
+  );
+
+  for (const step of result.materialized.steps) {
+    assert.equal(
+      step.setCount,
+      4
+    );
+
+    assert.equal(
+      step.reps,
+      1
+    );
+  }
+
+  assert.equal(
+    result.materialized.workDistanceKm,
+    7.2
+  );
+}
+
+
+function testRepeatedPaceProgressionAdvancesAgain() {
+  const workout = thresholdWorkout({
+    reps: false,
+    pace: true,
+    recovery: false,
+  });
+
+  const before = materializeWorkout(
+    workout,
+    {
+      score: 80,
+      current10k: '30:00',
+    }
+  );
+
+  assert.equal(
+    before.scoreGroup,
+    8
+  );
+
+  const first =
+    progressMaterializedWorkout({
+      workout,
+      materialized: before,
+      decision: 'progress',
+    });
+
+  assert.equal(
+    first.materialized.progressionPaceGroup,
+    9
+  );
+
+  assert.equal(
+    first.materialized.blocks[0].paceFactor,
+    0.92
+  );
+
+  const second =
+    progressMaterializedWorkout({
+      workout,
+      materialized: first.materialized,
+      decision: 'progress',
+    });
+
+  assert.equal(
+    second.materialized.progressionPaceGroup,
+    10
+  );
+
+  assert.equal(
+    second.materialized.blocks[0].paceFactor,
+    0.94
+  );
+}
+
+
+function testStepPaceProgressionRespectsBlockNumber() {
+  const workout =
+    multiBlockStepPaceWorkout();
+
+  const before = materializeWorkout(
+    workout,
+    {
+      score: 80,
+      current10k: '30:00',
+    }
+  );
+
+  assert.equal(
+    before.steps[0].paceFactor,
+    0.95
+  );
+
+  assert.equal(
+    before.steps[1].paceFactor,
+    1.00
+  );
+
+  const result =
+    progressMaterializedWorkout({
+      workout,
+      materialized: before,
+      decision: 'progress',
+    });
+
+  assert.equal(
+    result.changed,
+    true
+  );
+
+  assert.equal(
+    result.lever,
+    'pace'
+  );
+
+  assert.equal(
+    result.materialized.steps[0].paceFactor,
+    0.97
+  );
+
+  assert.equal(
+    result.materialized.steps[1].paceFactor,
+    1.02
+  );
+}
 const tests = [
   testDecisionNormalization,
   testCapabilities,
@@ -531,6 +692,9 @@ const tests = [
   testRecentFamilyRotatesToLeastRecentAlternative,
   testMaintainNeverRotatesFamily,
   testProgressionPlanReturnsFamilyAndOnePreferredLever,
+    testStepSetProgressionChangesSetsOnly,
+  testRepeatedPaceProgressionAdvancesAgain,
+  testStepPaceProgressionRespectsBlockNumber,
 ];
 
 for (const test of tests) {
