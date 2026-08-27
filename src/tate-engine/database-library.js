@@ -564,7 +564,6 @@ function materializeIntervalWorkout(
     blocks,
   };
 }
-
 function materializeStepWorkout(
   workout,
   band,
@@ -575,11 +574,27 @@ function materializeStepWorkout(
     .filter(
       step => Number(step.performance_band) === band
     )
-    .sort((a, b) => a.step_number - b.step_number)
+    .sort((a, b) => {
+      const blockDelta =
+        Number(a.block_number || 1) -
+        Number(b.block_number || 1);
+
+      return blockDelta ||
+        Number(a.step_number) - Number(b.step_number);
+    })
     .map(step => {
+      const blockNumber = Number(step.block_number || 1);
+
+      const bandRow = (workout.bandDefaults || []).find(
+        item =>
+          Number(item.performance_band) === band &&
+          Number(item.block_number) === blockNumber
+      );
+
       const pace = workout.stepPaceDefaults.find(
         item =>
           Number(item.performance_band) === band &&
+          Number(item.block_number || 1) === blockNumber &&
           Number(item.step_number) ===
             Number(step.step_number) &&
           Number(item.score_group) === group
@@ -590,7 +605,9 @@ function materializeStepWorkout(
         current10kSeconds,
         factor
       );
+
       const distanceMeters = number(step.distance_m);
+
       const targetSeconds =
         Number.isFinite(paceSecondsPerKm) &&
         Number.isFinite(distanceMeters)
@@ -598,13 +615,21 @@ function materializeStepWorkout(
           : null;
 
       const reps = number(step.reps, 1);
+
+      const setCount = Math.max(
+        1,
+        number(bandRow?.reps_default, 1)
+      );
+
       const repWorkDistanceKm =
         Number.isFinite(distanceMeters)
           ? distanceMeters / 1000
           : null;
 
       return {
+        blockNumber,
         stepNumber: Number(step.step_number),
+        setCount,
         reps,
         distanceMeters,
         paceFactor: factor,
@@ -615,7 +640,7 @@ function materializeStepWorkout(
         workDistanceKm:
           roundWorkKm(
             Number.isFinite(repWorkDistanceKm)
-              ? repWorkDistanceKm * reps
+              ? repWorkDistanceKm * reps * setCount
               : null
           ),
         recoveryType: step.recovery_type,
@@ -627,7 +652,7 @@ function materializeStepWorkout(
     kind: 'steps',
     steps,
   };
-}
+            }
 
 function findPaceProfile(profiles, level) {
   return profiles.find(profile => profile.pace_level === level) || null;
