@@ -45,41 +45,56 @@ export const TRAINING_PHASE_CONFIG =
       }),
 
       aerobic: Object.freeze({
-        otherSecondaryShare: 0.20,
+  otherSecondaryShare: 0.20,
 
-        otherTargets:
-          Object.freeze([
-            'strides',
-            'progressive',
-          ]),
-      }),
+  /*
+   * Loading:
+   * build aerobic durability first.
+   *
+   * Progressive is deliberately first
+   * in the rotation.
+   */
+  otherTargets:
+    Object.freeze([
+      'progressive',
+      'strides',
+    ]),
+}),
 
-      threshold: Object.freeze({
-        primaryShare: 2 / 3,
-        secondaryShare: 1 / 3,
+threshold: Object.freeze({
+  primaryShare: 2 / 3,
+  secondaryShare: 1 / 3,
 
-        secondaryEvery: 3,
+  secondaryEvery: 3,
 
-        secondaryTargets:
-          Object.freeze([
-            'race_specific',
-            'durability',
-          ]),
-      }),
+  /*
+   * Early overload phase:
+   * use the secondary Threshold slot
+   * for durability rather than
+   * race-specific work.
+   */
+  secondaryTargets:
+    Object.freeze([
+      'durability',
+    ]),
+}),
 
-      vo2max: Object.freeze({
-        primaryShare: 2 / 3,
-        secondaryShare: 1 / 3,
+vo2max: Object.freeze({
+  primaryShare: 2 / 3,
+  secondaryShare: 1 / 3,
 
-        secondaryEvery: 3,
+  secondaryEvery: 3,
 
-        secondaryTargets:
-          Object.freeze([
-            'speed',
-            'sprint',
-            'hill_work',
-          ]),
-      }),
+  /*
+   * Loading uses the secondary
+   * VO2 anchor for strength-oriented
+   * aerobic power.
+   */
+  secondaryTargets:
+    Object.freeze([
+      'hill_work',
+    ]),
+}),
     }),
 
     base: Object.freeze({
