@@ -987,6 +987,7 @@ if (
  */
 export function calculateSlotCounts({
   event = '10K',
+  phase = 'base',
   slotCount = 10,
 } = {}) {
   const totalSlots =
@@ -1000,8 +1001,20 @@ export function calculateSlotCounts({
       100
     );
 
-  const profile =
-    profileForEvent(event);
+const trainingPhase =
+  normalizeTrainingPhase(
+    phase
+  );
+
+const phaseRule =
+  phaseConfigFor(
+    trainingPhase
+  );
+
+const profile =
+  phaseRule
+    ?.primaryDistribution ??
+  profileForEvent(event);
 
   const raw =
     PRIMARY_SECTIONS.map(
