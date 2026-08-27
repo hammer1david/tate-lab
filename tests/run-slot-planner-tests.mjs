@@ -619,11 +619,19 @@ function testTrainingPhaseRules() {
     );
 
     assert.equal(
-      TRAINING_PHASE_CONFIG[
-        phase
-      ].primaryDistribution,
-      'fixed_70_20_10'
-    );
+  TRAINING_PHASE_CONFIG[
+    phase
+  ].primaryDistribution,
+  TEN_K_PRIMARY_DISTRIBUTION
+);
+    assert.deepEqual(
+  TEN_K_PRIMARY_DISTRIBUTION,
+  {
+    Aerobic: 0.70,
+    Threshold: 0.20,
+    VO2max: 0.10,
+  }
+);
 
     assert.equal(
       TRAINING_PHASE_CONFIG[
@@ -713,6 +721,33 @@ function testTrainingPhaseRules() {
   assert.equal(
     taper.weeklyKmPhase,
     'tapering'
+  );
+}
+for (
+  const phase of
+  TRAINING_PHASES
+) {
+  const counts =
+    calculateSlotCounts({
+      event: '10K',
+      phase,
+      slotCount: 10,
+    });
+
+  assert.deepEqual(
+    Object.fromEntries(
+      counts.map(
+        item => [
+          item.section,
+          item.count,
+        ]
+      )
+    ),
+    {
+      Aerobic: 7,
+      Threshold: 2,
+      VO2max: 1,
+    }
   );
 }
 
