@@ -1857,12 +1857,17 @@ export function buildGoalPlan({
       phase
     );
 
-  const counts =
-    calculateSlotCounts({
-      event,
-      slotCount,
-      scores,
-    });
+const counts =
+  calculateSlotCounts({
+    event,
+
+    phase:
+      trainingPhase,
+
+    slotCount,
+
+    scores,
+  });
 
   const baseSlots =
     buildSlotSequence(
