@@ -1265,6 +1265,7 @@ const tests = [
   testWeeklyScheduleProgressionCarriesState,
   testWeeklyFamilyRotationUsesCompletedHistory,
 testMaintainKeepsLastCompletedFamily,
+    testSkippedWorkoutDoesNotCountForFamilyRotation,
 ];
 
 for (const test of tests) {
