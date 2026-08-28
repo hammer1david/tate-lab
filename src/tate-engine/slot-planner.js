@@ -680,6 +680,8 @@ export function buildAutomaticSecondaryPlan({
   estimatedWeeks = null,
   hasLongRunDay = true,
   longRunAllowed = true,
+  longRunMinimumPerWeek =
+    null,
 } = {}) {
   const trainingPhase =
     normalizeTrainingPhase(
@@ -751,17 +753,21 @@ const phaseRule =
 
   let longRunCount = 0;
 
-  const longRunMinimumPerWeek =
-  Math.max(
-    0,
-    Math.round(
-      Number(
-        phaseRule
-          .longRun
-          ?.minimumPerWeek
-      ) || 0
-    )
-  );
+  longRunMinimumPerWeek =
+  longRunMinimumPerWeek ==
+    null
+    ? 1
+    : Math.max(
+        0,
+        Math.min(
+          1,
+          Math.round(
+            Number(
+              longRunMinimumPerWeek
+            ) || 0
+          )
+        )
+      );
 
 /*
  * LONG RUN
