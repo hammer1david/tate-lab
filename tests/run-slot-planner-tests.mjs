@@ -812,7 +812,114 @@ assert.equal(
     0
   );
 }
+function testGoalPlanUsesDatabaseLongRunSessionsPerWeek() {
+  const longRunWorkout = {
+    id:
+      '10K_LONG_RUN_DYNAMIC',
 
+    event: '10K',
+    role: 'priority',
+    active: true,
+
+    stimulus:
+      'Long Run',
+
+    dynamicType:
+      'long_run',
+
+    dynamicConfig: {
+      phaseRules: [
+        {
+          phase: 'base',
+          active: true,
+          sessions_per_week: 1,
+        },
+        {
+          phase: 'loading',
+          active: true,
+          sessions_per_week: 1,
+        },
+        {
+          phase: 'sharpening',
+          active: true,
+          sessions_per_week: 1,
+        },
+        {
+          phase: 'taper',
+          active: true,
+          sessions_per_week: 0,
+        },
+      ],
+    },
+  };
+
+  const basePlan =
+    buildGoalPlan({
+      event: '10K',
+      phase: 'base',
+      slotCount: 30,
+
+      workouts: [
+        longRunWorkout,
+      ],
+
+      secondaryContext: {
+        trainingDaysPerWeek: 5,
+        hasLongRunDay: true,
+      },
+    });
+
+  assert.equal(
+    basePlan
+      .secondaryNeedSummary
+      .longRunMinimumPerWeek,
+    1
+  );
+
+  assert.equal(
+    basePlan
+      .secondaryNeedSummary
+      .longRunCount,
+    6
+  );
+
+  const taperPlan =
+    buildGoalPlan({
+      event: '10K',
+      phase: 'tapering',
+      slotCount: 30,
+
+      workouts: [
+        longRunWorkout,
+      ],
+
+      secondaryContext: {
+        trainingDaysPerWeek: 5,
+        hasLongRunDay: true,
+      },
+    });
+
+  assert.equal(
+    taperPlan
+      .secondaryNeedSummary
+      .longRunMinimumPerWeek,
+    0
+  );
+
+  assert.equal(
+    taperPlan
+      .secondaryNeedSummary
+      .longRunCount,
+    0
+  );
+
+  assert.equal(
+    taperPlan
+      .secondarySummary
+      .longRun,
+    0
+  );
+}
 function testMissingLongRunDayCreatesNeedGap() {
   const counts = calculateSlotCounts({
     event: '10K',
@@ -1476,7 +1583,10 @@ testSharpeningRemovesGeneralHillAndProgressiveWork();
 
 testTaperKeepsSpecificityAndCutsExtraAerobicLoad();
 
+testGoalPlanUsesDatabaseLongRunSessionsPerWeek();
+
 testMissingLongRunDayCreatesNeedGap();
+      
 testDefaultWeeklyAvailabilityPattern();
 testUnavailableDaysAreNeverScheduled();
 testCheckedDayCountControlsWeekCapacity();
