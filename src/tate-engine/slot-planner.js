@@ -40,9 +40,7 @@ export const TRAINING_PHASE_CONFIG =
       weeklyKmPhase:
         'loading',
 
-      longRun: Object.freeze({
-        minimumPerWeek: 1,
-      }),
+      
 
       aerobic: Object.freeze({
   otherSecondaryShare: 0.20,
@@ -107,9 +105,7 @@ vo2max: Object.freeze({
       weeklyKmPhase:
         'base',
 
-      longRun: Object.freeze({
-        minimumPerWeek: 1,
-      }),
+      
 
       aerobic: Object.freeze({
         otherSecondaryShare: 0.20,
@@ -159,9 +155,7 @@ vo2max: Object.freeze({
       weeklyKmPhase:
         'sharpening',
 
-      longRun: Object.freeze({
-        minimumPerWeek: 1,
-      }),
+      
 aerobic: Object.freeze({
   otherSecondaryShare: 0.20,
 
@@ -224,10 +218,7 @@ aerobic: Object.freeze({
       weeklyKmPhase:
         'tapering',
 
-      longRun: Object.freeze({
-        minimumPerWeek: 1,
-      }),
-
+      
       aerobic: Object.freeze({
   /*
    * Taper:
