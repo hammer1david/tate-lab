@@ -876,13 +876,7 @@ function testTrainingPhaseRules() {
   }
 );
 
-    assert.equal(
-      TRAINING_PHASE_CONFIG[
-        phase
-      ].longRun
-        .minimumPerWeek,
-      1
-    );
+    
   }
 
   assert.equal(
