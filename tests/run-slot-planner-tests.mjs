@@ -718,13 +718,34 @@ function testTaperKeepsSpecificityAndCutsExtraAerobicLoad() {
     );
 
   const automatic =
-    buildAutomaticSecondaryPlan({
-      slots,
-      phase: 'tapering',
-      trainingDaysPerWeek: 5,
-      hasLongRunDay: true,
-    });
+  buildAutomaticSecondaryPlan({
+    slots,
+    phase: 'tapering',
+    trainingDaysPerWeek: 5,
+    hasLongRunDay: true,
+    longRunMinimumPerWeek: 0,
+  });
+  assert.equal(
+  automatic
+    .summary
+    .longRunMinimumPerWeek,
+  0
+);
 
+assert.equal(
+  automatic
+    .summary
+    .longRunCount,
+  0
+);
+
+assert.equal(
+  automatic
+    .summary
+    .countsByTarget
+    .long_run || 0,
+  0
+);
   /*
    * 21 Aerobic anchors × 10%
    * = floor(2.1)
