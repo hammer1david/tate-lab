@@ -300,6 +300,83 @@ export function phaseConfigFor(phase) {
   ];
 }
 
+function longRunPhaseKey(
+  phase
+) {
+  const normalized =
+    normalizeTrainingPhase(
+      phase
+    );
+
+  return normalized ===
+    'tapering'
+    ? 'taper'
+    : normalized;
+}
+
+function longRunSessionsPerWeekFromWorkouts(
+  workouts = [],
+  phase = 'base'
+) {
+  const longRunWorkout =
+    workouts.find(
+      workout =>
+        workout.active !== false &&
+        workout.dynamicType ===
+          'long_run'
+    );
+
+  const rules =
+    longRunWorkout
+      ?.dynamicConfig
+      ?.phaseRules || [];
+
+  const key =
+    longRunPhaseKey(
+      phase
+    );
+
+  const rule =
+    rules.find(
+      item =>
+        item.active !== false &&
+        item.phase === key
+    ) ||
+    rules.find(
+      item =>
+        item.active !== false &&
+        item.phase === 'base'
+    ) ||
+    null;
+
+  if (!rule) {
+    return null;
+  }
+
+  const sessions =
+    Number(
+      rule.sessions_per_week
+    );
+
+  if (
+    !Number.isFinite(
+      sessions
+    )
+  ) {
+    return null;
+  }
+
+  return Math.max(
+    0,
+    Math.min(
+      1,
+      Math.round(
+        sessions
+      )
+    )
+  );
+}
+
 export const SECONDARY_TARGETS =
   Object.freeze({
     Aerobic: Object.freeze([
