@@ -1992,6 +1992,11 @@ export function buildGoalPlan({
     normalizeTrainingPhase(
       phase
     );
+  const longRunMinimumPerWeek =
+  longRunSessionsPerWeekFromWorkouts(
+    workouts,
+    trainingPhase
+  );
 
 const counts =
   calculateSlotCounts({
@@ -2072,6 +2077,8 @@ longRunAllowed:
         longRunAllowed:
   automaticSecondaryInput
     .longRunAllowed,
+
+        longRunMinimumPerWeek,
         })
       : {
           secondaryPlan: {},
